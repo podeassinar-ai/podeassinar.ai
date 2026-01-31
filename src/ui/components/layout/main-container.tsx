@@ -1,3 +1,5 @@
+import { MobileNav } from './mobile-nav';
+
 interface MainContainerProps {
   children: React.ReactNode;
   title?: string;
@@ -7,25 +9,34 @@ interface MainContainerProps {
 
 export function MainContainer({ children, title, subtitle, action }: MainContainerProps) {
   return (
-    <main className="ml-64 min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto px-10 py-12">
-        {(title || subtitle) && (
-          <header className="mb-10 border-b border-border pb-6 flex justify-between items-start">
-            <div>
-              {title && (
-                <h1 className="text-2xl font-bold text-text-primary tracking-tight">{title}</h1>
+    <>
+      <main className="w-full md:pl-64 min-h-screen bg-white pb-24 md:pb-12 transition-all duration-300">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-12 animate-fade-in">
+          {(title || subtitle) && (
+            <header className="mb-8 md:mb-12 flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+              <div className="animate-fade-up">
+                {title && (
+                  <h1 className="text-3xl md:text-4xl font-bold text-text-primary tracking-tight mb-2">
+                    {title}
+                  </h1>
+                )}
+                {subtitle && (
+                  <p className="text-text-secondary text-lg leading-relaxed max-w-2xl">{subtitle}</p>
+                )}
+              </div>
+              {action && (
+                <div className="animate-fade-up animate-delay-100 self-start">
+                  {action}
+                </div>
               )}
-              {subtitle && (
-                <p className="mt-2 text-text-secondary text-lg font-light">{subtitle}</p>
-              )}
-            </div>
-            {action && (
-              <div>{action}</div>
-            )}
-          </header>
-        )}
-        {children}
-      </div>
-    </main>
+            </header>
+          )}
+          <div className="animate-fade-up animate-delay-200">
+            {children}
+          </div>
+        </div>
+      </main>
+      <MobileNav />
+    </>
   );
 }

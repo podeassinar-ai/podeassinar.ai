@@ -4,68 +4,74 @@
 
 @layer base {
   html {
-    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     @apply text-base text-text-primary bg-background;
+    scroll-behavior: smooth;
   }
 
   body {
-    @apply bg-background text-text-primary antialiased;
+    @apply bg-background text-text-primary antialiased overflow-x-hidden;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold tracking-tight text-text-primary;
+    @apply font-bold tracking-tight text-text-primary;
   }
   
-  h1 { @apply text-3xl; }
-  h2 { @apply text-2xl; }
-  h3 { @apply text-xl; }
+  h1 { @apply text-4xl md:text-5xl lg:text-6xl; }
+  h2 { @apply text-3xl md:text-4xl; }
+  h3 { @apply text-xl md:text-2xl; }
 }
 
 @layer components {
-  /* Institutional Button Styles */
+  /* Brilliance Button Styles */
   .btn-base {
-    @apply inline-flex items-center justify-center font-medium rounded transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center font-bold rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-primary {
-    @apply btn-base bg-primary text-white hover:bg-primary-hover active:bg-primary-dark shadow-sm border border-transparent;
+    @apply btn-base px-6 py-3 bg-primary text-white hover:bg-primary-hover shadow-lg hover:shadow-glow hover:-translate-y-0.5 active:translate-y-0;
   }
 
   .btn-secondary {
-    @apply btn-base bg-white text-text-primary border border-border hover:bg-gray-50 active:bg-gray-100 shadow-sm;
+    @apply btn-base px-6 py-3 bg-white text-text-primary border border-border hover:border-primary/20 hover:bg-gray-50 shadow-sm hover:shadow-md;
   }
   
   .btn-ghost {
-    @apply btn-base text-text-secondary hover:bg-gray-100 hover:text-text-primary;
+    @apply btn-base px-4 py-2 text-text-secondary hover:bg-gray-50 hover:text-primary;
   }
 
   /* Form Elements */
   .input-field {
-    @apply w-full px-3 py-2 bg-white border border-border rounded text-text-primary placeholder:text-text-light focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all duration-200 shadow-sm;
+    @apply w-full px-4 py-3 bg-gray-50/50 border border-border rounded-xl text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-all duration-200;
   }
 
   .input-label {
-    @apply block text-sm font-medium text-text-secondary mb-1.5;
+    @apply block text-sm font-semibold text-text-secondary mb-2;
   }
   
   .input-hint {
-    @apply text-xs text-text-muted mt-1;
+    @apply text-xs text-text-muted mt-1.5;
   }
 
   /* Cards */
   .card {
-    @apply bg-surface rounded border border-border p-6 shadow-sm hover:shadow transition-shadow duration-200;
+    @apply bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 p-6 shadow-DEFAULT hover:shadow-md transition-all duration-300;
+  }
+
+  /* Glass Panel */
+  .glass-panel {
+    @apply bg-white/70 backdrop-blur-md border border-white/50 shadow-sm;
   }
   
   /* Sidebar Links */
   .sidebar-link {
-    @apply flex items-center gap-3 px-3 py-2.5 text-gray-300 rounded hover:bg-white/10 hover:text-white transition-colors duration-200;
+    @apply flex items-center gap-3 px-4 py-3 text-text-secondary rounded-xl hover:bg-orange-50 hover:text-primary transition-colors duration-200 font-medium;
   }
 
   .sidebar-link-active {
-    @apply flex items-center gap-3 px-3 py-2.5 text-white bg-white/15 rounded font-medium border-l-2 border-secondary;
+    @apply flex items-center gap-3 px-4 py-3 text-primary bg-orange-50 rounded-xl font-bold;
   }
 }
 
@@ -80,10 +86,15 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
+  background: #D1D5DB;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
+  background: #9CA3AF;
 }
+
+/* Utilities */
+.animate-delay-100 { animation-delay: 100ms; }
+.animate-delay-200 { animation-delay: 200ms; }
+.animate-delay-300 { animation-delay: 300ms; }
