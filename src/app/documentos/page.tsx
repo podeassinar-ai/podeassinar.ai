@@ -32,12 +32,12 @@ const typeLabels: Record<string, string> = {
   OUTROS: 'Outros',
 };
 
-const statusLabels: Record<string, { label: string; color: string }> = {
-  UPLOADED: { label: 'Enviado', color: 'text-text-muted' },
-  PROCESSING: { label: 'Processando', color: 'text-blue-500' },
-  VALIDATED: { label: 'Validado', color: 'text-success' },
-  REJECTED: { label: 'Rejeitado', color: 'text-error' },
-  EXPIRED: { label: 'Expirado', color: 'text-warning' },
+const statusStyles: Record<string, { label: string; className: string }> = {
+  UPLOADED: { label: 'Enviado', className: 'text-gray-600 bg-gray-50' },
+  PROCESSING: { label: 'Em Análise', className: 'text-blue-700 bg-blue-50' },
+  VALIDATED: { label: 'Validado', className: 'text-emerald-700 bg-emerald-50' },
+  REJECTED: { label: 'Rejeitado', className: 'text-red-700 bg-red-50' },
+  EXPIRED: { label: 'Expirado', className: 'text-orange-700 bg-orange-50' },
 };
 
 export default function DocumentosPage() {
@@ -46,80 +46,78 @@ export default function DocumentosPage() {
       <Sidebar />
       <MainContainer
         title="Documentos"
-        subtitle="Gerencie os documentos enviados para seus diagnósticos"
+        subtitle="Central de documentos e arquivos enviados"
       >
-        <Alert variant="info" className="mb-6">
-          <strong>Política de retenção:</strong> Seus documentos são armazenados de forma segura
-          e excluídos automaticamente após 30-90 dias conforme a LGPD. Certidões de matrícula
-          são mantidas por até 30 dias.
+        <Alert variant="info" className="mb-8">
+          <strong>Política de Segurança:</strong> Seus documentos são criptografados. 
+          Conforme a LGPD, certidões são retidas apenas pelo período necessário para a análise (máximo de 90 dias).
         </Alert>
 
         {mockDocuments.length === 0 ? (
-          <Card className="text-center py-12">
-            <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-              <svg className="w-8 h-8 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+          <div className="bg-white border border-border border-dashed rounded-lg p-12 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-gray-50 rounded-full flex items-center justify-center">
+              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
             <h3 className="text-lg font-medium text-text-primary mb-2">
-              Nenhum documento enviado
+              Nenhum documento
             </h3>
             <p className="text-text-secondary">
               Os documentos enviados nos seus diagnósticos aparecerão aqui.
             </p>
-          </Card>
+          </div>
         ) : (
-          <div className="space-y-4">
-            {mockDocuments.map((doc) => {
-              const status = statusLabels[doc.status];
-              const isExpiringSoon = new Date(doc.expiresAt) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-              
-              return (
-                <Card key={doc.id}>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <svg className="w-5 h-5 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs font-medium px-2 py-0.5 bg-gray-100 rounded">
-                            {typeLabels[doc.type]}
-                          </span>
-                          <span className={`text-xs font-medium ${status.color}`}>
-                            {status.label}
-                          </span>
+          <div className="bg-white rounded border border-border overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Documento</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
+                  <th scope="col" className="relative px-6 py-3"><span className="sr-only">Ações</span></th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {mockDocuments.map((doc) => {
+                  const status = statusStyles[doc.status];
+                  const isExpiringSoon = new Date(doc.expiresAt) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+                  
+                  return (
+                    <tr key={doc.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10 bg-gray-100 rounded flex items-center justify-center">
+                             <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                             </svg>
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">{doc.name}</div>
+                            <div className="text-xs text-gray-500 truncate max-w-[200px]">{doc.transactionAddress}</div>
+                          </div>
                         </div>
-                        <h3 className="font-medium text-text-primary">{doc.name}</h3>
-                        <p className="text-sm text-text-muted mt-1">
-                          {doc.transactionAddress}
-                        </p>
-                        <div className="flex items-center gap-4 mt-2 text-xs text-text-muted">
-                          <span>Enviado: {new Date(doc.uploadedAt).toLocaleDateString('pt-BR')}</span>
-                          <span className={isExpiringSoon ? 'text-warning' : ''}>
-                            Expira: {new Date(doc.expiresAt).toLocaleDateString('pt-BR')}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="ghost" size="sm">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <svg className="w-4 h-4 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{typeLabels[doc.type]}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${status.className}`}>
+                          {status.label}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(doc.uploadedAt).toLocaleDateString('pt-BR')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button className="text-primary hover:text-primary-hover mr-4">Download</button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </MainContainer>

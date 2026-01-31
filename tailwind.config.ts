@@ -3,35 +3,60 @@ import type { Config } from 'tailwindcss'
 const config: Config = {
   content: [
     './src/ui/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/app/**/*.{js,ts,jsx,tsx,mdx}', // Added to ensure app directory is scanned
   ],
   theme: {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#FF4B4B',
-          hover: '#FF6B6B',
-          light: '#FFE8E8',
+          DEFAULT: '#002B49', // Deep Institutional Blue
+          hover: '#003D66',
+          light: '#F0F4F8',
+          dark: '#001A2E',
         },
-        background: '#F0F2F6',
+        secondary: {
+          DEFAULT: '#00875A', // Discreet Success Green
+          hover: '#006C48',
+          light: '#E6F3EF',
+        },
+        background: '#F8F9FA', // Professional off-white
         surface: '#FFFFFF',
         text: {
-          primary: '#262730',
-          secondary: '#555867',
-          muted: '#8A8D9B',
+          primary: '#111827', // Gray-900
+          secondary: '#374151', // Gray-700
+          muted: '#6B7280', // Gray-500
+          light: '#9CA3AF', // Gray-400
         },
-        border: '#E0E2E9',
-        success: '#21C354',
-        warning: '#FACA15',
-        error: '#FF4B4B',
+        border: '#E2E8F0', // Slate-200
+        success: '#059669', // Emerald-600
+        warning: '#D97706', // Amber-600
+        error: '#DC2626', // Red-600
+        info: '#002B49', // Reusing Primary Blue for Info/Brand alignment
       },
       fontFamily: {
         sans: ['Inter', 'Segoe UI', 'system-ui', 'sans-serif'],
         mono: ['Source Code Pro', 'monospace'],
       },
-      boxShadow: {
-        card: '0 1px 3px rgba(0, 0, 0, 0.08)',
-        dropdown: '0 4px 12px rgba(0, 0, 0, 0.12)',
+      borderRadius: {
+        'none': '0',
+        'sm': '0.125rem', // 2px
+        DEFAULT: '0.25rem', // 4px
+        'md': '0.25rem', // 4px - enforcing minimal radius
+        'lg': '0.25rem', // 4px - enforcing minimal radius
+        'xl': '0.375rem', // 6px
+        'full': '9999px',
       },
+      boxShadow: {
+        'sm': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+        DEFAULT: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+        'md': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+        'lg': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+        'card': '0 1px 0 rgba(0,0,0,0.05)', // Subtle border-like shadow
+        'dropdown': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+      },
+      spacing: {
+        '18': '4.5rem',
+      }
     },
   },
   plugins: [],

@@ -14,4 +14,5 @@ export interface IDiagnosisRepository {
   markReviewed(id: string, reviewerId: string): Promise<LegalDiagnosis>;
   markDelivered(id: string): Promise<LegalDiagnosis>;
   findPendingReview(): Promise<LegalDiagnosis[]>;
+  delete(id: string): Promise<void>;
 }

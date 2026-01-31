@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { Button } from './button';
 import { Progress } from './progress';
 
 interface FileUploaderProps {
@@ -100,16 +99,16 @@ export function FileUploader({
 
   return (
     <div className="space-y-2">
-      {label && <p className="text-sm font-medium text-text-primary">{label}</p>}
+      {label && <p className="input-label">{label}</p>}
       
       <div
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={`
-          relative border-2 border-dashed rounded-lg p-8 text-center transition-colors
-          ${isDragging ? 'border-primary bg-primary-light/30' : 'border-border'}
-          ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-primary/50'}
+          relative border border-dashed rounded p-10 text-center transition-all duration-200
+          ${isDragging ? 'border-primary bg-primary/5' : 'border-border bg-gray-50/50 hover:bg-gray-50 hover:border-gray-400'}
+          ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
         `}
       >
         <input
@@ -121,19 +120,19 @@ export function FileUploader({
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
         />
         
-        <div className="space-y-3">
-          <div className="w-12 h-12 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
-            <svg className="w-6 h-6 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+        <div className="space-y-4">
+          <div className="w-12 h-12 mx-auto bg-white border border-gray-100 rounded shadow-sm flex items-center justify-center">
+            <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
           
           <div>
-            <p className="text-sm text-text-primary">
-              Arraste arquivos aqui ou <span className="text-primary font-medium">clique para selecionar</span>
+            <p className="text-sm font-medium text-text-primary">
+              Clique para selecionar ou arraste aqui
             </p>
             <p className="text-xs text-text-muted mt-1">
-              {accept.replace(/\./g, '').toUpperCase().split(',').join(', ')} (máx. {Math.round(maxSize / 1024 / 1024)}MB)
+              Arquivos suportados: {accept.replace(/\./g, '').toUpperCase().split(',').join(', ')}
             </p>
           </div>
         </div>
@@ -144,11 +143,11 @@ export function FileUploader({
       )}
 
       {hint && !error && (
-        <p className="text-xs text-text-muted">{hint}</p>
+        <p className="input-hint">{hint}</p>
       )}
 
       {error && (
-        <p className="text-xs text-error">{error}</p>
+        <p className="text-xs text-error mt-1">{error}</p>
       )}
     </div>
   );

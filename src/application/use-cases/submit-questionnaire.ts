@@ -26,9 +26,17 @@ export class SubmitQuestionnaireUseCase {
       throw new Error('Unauthorized access to transaction');
     }
 
+    if (transaction.status !== 'PENDING_QUESTIONNAIRE') {
+      throw new Error('Transaction is not in questionnaire stage');
+    }
+
     const questionnaire = await this.questionnaireRepository.findByTransactionId(input.transactionId);
     if (!questionnaire) {
       throw new Error('Questionnaire not found');
+    }
+
+    if (questionnaire.completedAt) {
+      throw new Error('Questionnaire already completed');
     }
 
     for (const answer of input.answers) {
@@ -36,7 +44,12 @@ export class SubmitQuestionnaireUseCase {
     }
 
     await this.questionnaireRepository.markComplete(questionnaire.id);
-    await this.transactionRepository.updateStatus(input.transactionId, 'PENDING_DOCUMENTS');
+
+    try {
+      await this.transactionRepository.updateStatus(input.transactionId, 'PENDING_DOCUMENTS');
+    } catch (statusError) {
+      throw new Error(`Failed to update transaction status: ${statusError instanceof Error ? statusError.message : 'Unknown error'}`);
+    }
 
     await this.auditService.log({
       userId: input.userId,

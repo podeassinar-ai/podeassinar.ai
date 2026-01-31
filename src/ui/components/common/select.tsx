@@ -19,18 +19,18 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
     return (
       <div className="space-y-1.5">
         {label && (
-          <label htmlFor={selectId} className="block text-sm font-medium text-text-primary">
+          <label htmlFor={selectId} className="input-label">
             {label}
           </label>
         )}
         <select
           ref={ref}
           id={selectId}
-          className={`input-field ${error ? 'border-error focus:ring-error/30 focus:border-error' : ''} ${className}`}
+          className={`input-field h-[42px] ${error ? 'border-error ring-1 ring-error/20' : ''} ${className}`}
           {...props}
         >
           {placeholder && (
-            <option value="" disabled>
+            <option value="" disabled className="text-gray-500">
               {placeholder}
             </option>
           )}
@@ -41,7 +41,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           ))}
         </select>
         {error && (
-          <p className="text-xs text-error">{error}</p>
+          <p className="text-xs text-error mt-1">{error}</p>
         )}
       </div>
     );

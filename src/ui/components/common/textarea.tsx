@@ -13,21 +13,21 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     return (
       <div className="space-y-1.5">
         {label && (
-          <label htmlFor={textareaId} className="block text-sm font-medium text-text-primary">
+          <label htmlFor={textareaId} className="input-label">
             {label}
           </label>
         )}
         <textarea
           ref={ref}
           id={textareaId}
-          className={`input-field min-h-[100px] resize-y ${error ? 'border-error focus:ring-error/30 focus:border-error' : ''} ${className}`}
+          className={`input-field min-h-[120px] resize-y ${error ? 'border-error ring-1 ring-error/20' : ''} ${className}`}
           {...props}
         />
         {hint && !error && (
-          <p className="text-xs text-text-muted">{hint}</p>
+          <p className="input-hint">{hint}</p>
         )}
         {error && (
-          <p className="text-xs text-error">{error}</p>
+          <p className="text-xs text-error mt-1">{error}</p>
         )}
       </div>
     );

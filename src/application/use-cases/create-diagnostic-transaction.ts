@@ -63,11 +63,30 @@ export class CreateDiagnosticTransactionUseCase {
       transactionId,
     });
 
-    const [savedTransaction, savedQuestionnaire, savedDiagnosis] = await Promise.all([
-      this.transactionRepository.create(transaction),
-      this.questionnaireRepository.create(questionnaire),
-      this.diagnosisRepository.create(diagnosis),
-    ]);
+    let savedTransaction: Transaction | null = null;
+    let savedQuestionnaire: DiagnosticQuestionnaire | null = null;
+    let savedDiagnosis: LegalDiagnosis | null = null;
+
+    try {
+      savedTransaction = await this.transactionRepository.create(transaction);
+
+      try {
+        savedQuestionnaire = await this.questionnaireRepository.create(questionnaire);
+      } catch (questionnaireError) {
+        await this.transactionRepository.delete(transactionId);
+        throw questionnaireError;
+      }
+
+      try {
+        savedDiagnosis = await this.diagnosisRepository.create(diagnosis);
+      } catch (diagnosisError) {
+        await this.questionnaireRepository.delete(questionnaireId);
+        await this.transactionRepository.delete(transactionId);
+        throw diagnosisError;
+      }
+    } catch (error) {
+      throw new Error(`Failed to create diagnostic transaction: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
 
     await this.auditService.log({
       userId: input.userId,

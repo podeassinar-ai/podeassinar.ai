@@ -8,6 +8,7 @@ import { IStorageService } from '@domain/interfaces/storage-service';
 import { IAuditService } from '@domain/interfaces/audit-service';
 
 export interface GenerateAIDiagnosisInput {
+  userId: string;
   transactionId: string;
 }
 
@@ -26,6 +27,10 @@ export class GenerateAIDiagnosisUseCase {
     const transaction = await this.transactionRepository.findById(input.transactionId);
     if (!transaction) {
       throw new Error('Transaction not found');
+    }
+
+    if (transaction.userId !== input.userId) {
+      throw new Error('Unauthorized access to transaction');
     }
 
     if (transaction.status !== 'PROCESSING') {

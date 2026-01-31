@@ -6,4 +6,5 @@ export interface IQuestionnaireRepository {
   findByTransactionId(transactionId: string): Promise<DiagnosticQuestionnaire | null>;
   addAnswer(id: string, answer: QuestionnaireAnswer): Promise<DiagnosticQuestionnaire>;
   markComplete(id: string): Promise<DiagnosticQuestionnaire>;
+  delete(id: string): Promise<void>;
 }

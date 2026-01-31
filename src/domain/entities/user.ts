@@ -16,7 +16,6 @@ export function createUser(params: {
   id: string;
   email: string;
   name: string;
-  role?: UserRole;
   phone?: string;
   documentNumber?: string;
 }): User {
@@ -25,7 +24,29 @@ export function createUser(params: {
     id: params.id,
     email: params.email,
     name: params.name,
-    role: params.role ?? 'CLIENT',
+    role: 'CLIENT',
+    phone: params.phone,
+    documentNumber: params.documentNumber,
+    isActive: true,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+export function createPrivilegedUser(params: {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  phone?: string;
+  documentNumber?: string;
+}): User {
+  const now = new Date();
+  return {
+    id: params.id,
+    email: params.email,
+    name: params.name,
+    role: params.role,
     phone: params.phone,
     documentNumber: params.documentNumber,
     isActive: true,

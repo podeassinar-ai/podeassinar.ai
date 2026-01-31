@@ -6,7 +6,7 @@ import {
   PaymentWebhookEvent,
   PaymentWebhookEventType,
 } from '@domain/interfaces/payment-gateway';
-import { createHmac } from 'crypto';
+import { createHmac, timingSafeEqual } from 'crypto';
 
 interface AbacatePayWebhookPayload {
   event: string;
@@ -64,15 +64,26 @@ export class AbacatePayGateway implements IPaymentGateway {
 
   verifyWebhookSignature(payload: string, signature: string): boolean {
     if (!this.webhookSecret) {
-      console.warn('ABACATEPAY_WEBHOOK_SECRET not configured, skipping signature verification');
-      return true;
+      console.error('SECURITY: ABACATEPAY_WEBHOOK_SECRET not configured - rejecting webhook');
+      return false;
+    }
+
+    if (!signature) {
+      return false;
     }
 
     const expectedSignature = createHmac('sha256', this.webhookSecret)
       .update(payload)
       .digest('hex');
 
-    return signature === expectedSignature;
+    const signatureBuffer = Buffer.from(signature, 'hex');
+    const expectedBuffer = Buffer.from(expectedSignature, 'hex');
+
+    if (signatureBuffer.length !== expectedBuffer.length) {
+      return false;
+    }
+
+    return timingSafeEqual(signatureBuffer, expectedBuffer);
   }
 
   parseWebhookEvent(payload: string): PaymentWebhookEvent {

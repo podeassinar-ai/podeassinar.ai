@@ -104,12 +104,16 @@ export class SupabaseTransactionRepository implements ITransactionRepository {
 
   async update(transaction: Transaction): Promise<Transaction> {
     const supabase = getSupabaseServiceClient();
+    const allowedFields = {
+      property_address: transaction.propertyAddress ?? null,
+      registry_number: transaction.registryNumber ?? null,
+      registry_office: transaction.registryOffice ?? null,
+      updated_at: new Date().toISOString(),
+    };
+
     const { data, error } = await supabase
       .from(this.tableName)
-      .update({
-        ...toRow(transaction),
-        updated_at: new Date().toISOString(),
-      })
+      .update(allowedFields)
       .eq('id', transaction.id)
       .select()
       .single();
