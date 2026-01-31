@@ -1,6 +1,6 @@
 import { IPaymentRepository } from '@domain/interfaces/payment-repository';
 import { ITransactionRepository } from '@domain/interfaces/transaction-repository';
-import { IPaymentGateway, PaymentWebhookEvent } from '@domain/interfaces/payment-gateway';
+import { IPaymentGateway } from '@domain/interfaces/payment-gateway';
 import { IAuditService } from '@domain/interfaces/audit-service';
 
 export interface ProcessPaymentWebhookInput {
@@ -30,14 +30,17 @@ export class ProcessPaymentWebhookUseCase {
     }
 
     switch (event.type) {
-      case 'payment.completed':
+      case 'billing.paid':
         await this.handlePaymentCompleted(payment.id, payment.transactionId, event.externalId, payment.userId);
         break;
-      case 'payment.failed':
+      case 'billing.expired':
         await this.paymentRepository.updateStatus(payment.id, 'FAILED', event.externalId);
         break;
-      case 'payment.refunded':
+      case 'billing.refunded':
         await this.paymentRepository.updateStatus(payment.id, 'REFUNDED', event.externalId);
+        break;
+      case 'billing.created':
+        await this.paymentRepository.updateStatus(payment.id, 'PROCESSING', event.externalId);
         break;
     }
   }

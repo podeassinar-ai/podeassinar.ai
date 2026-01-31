@@ -5,6 +5,11 @@ export interface CreateCheckoutParams {
   metadata: Record<string, string>;
   successUrl: string;
   cancelUrl: string;
+  customer: {
+    email: string;
+    name: string;
+    taxId?: string;
+  };
 }
 
 export interface CheckoutResult {
@@ -12,8 +17,14 @@ export interface CheckoutResult {
   checkoutUrl: string;
 }
 
+export type PaymentWebhookEventType = 
+  | 'billing.paid'
+  | 'billing.expired'
+  | 'billing.refunded'
+  | 'billing.created';
+
 export interface PaymentWebhookEvent {
-  type: 'payment.completed' | 'payment.failed' | 'payment.refunded';
+  type: PaymentWebhookEventType;
   externalId: string;
   metadata: Record<string, string>;
 }

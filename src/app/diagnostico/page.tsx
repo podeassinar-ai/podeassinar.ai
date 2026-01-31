@@ -307,7 +307,7 @@ function DiagnosticoContent() {
             </Button>
 
             <p className="text-xs text-text-muted text-center">
-              Pagamento seguro processado via Stripe. Seus dados estão protegidos.
+              Pagamento seguro via AbacatePay (Pix). Seus dados estão protegidos.
             </p>
           </div>
         </Card>

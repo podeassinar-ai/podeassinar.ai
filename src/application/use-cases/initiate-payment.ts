@@ -1,6 +1,7 @@
 import { ITransactionRepository } from '@domain/interfaces/transaction-repository';
 import { IPaymentRepository } from '@domain/interfaces/payment-repository';
-import { IPaymentGateway, CheckoutResult } from '@domain/interfaces/payment-gateway';
+import { IPaymentGateway } from '@domain/interfaces/payment-gateway';
+import { IUserRepository } from '@domain/interfaces/user-repository';
 import { createPayment, Payment } from '@domain/entities/payment';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -25,6 +26,7 @@ export class InitiatePaymentUseCase {
   constructor(
     private transactionRepository: ITransactionRepository,
     private paymentRepository: IPaymentRepository,
+    private userRepository: IUserRepository,
     private paymentGateway: IPaymentGateway
   ) {}
 
@@ -40,6 +42,11 @@ export class InitiatePaymentUseCase {
 
     if (transaction.status !== 'PENDING_PAYMENT') {
       throw new Error('Transaction is not ready for payment');
+    }
+
+    const user = await this.userRepository.findById(input.userId);
+    if (!user) {
+      throw new Error('User not found');
     }
 
     const existingPayments = await this.paymentRepository.findByTransactionId(input.transactionId);
@@ -70,6 +77,11 @@ export class InitiatePaymentUseCase {
       },
       successUrl: input.successUrl,
       cancelUrl: input.cancelUrl,
+      customer: {
+        email: user.email,
+        name: user.name,
+        taxId: user.documentNumber,
+      },
     });
 
     return {
