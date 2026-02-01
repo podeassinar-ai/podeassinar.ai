@@ -3,44 +3,61 @@ import { MainContainer } from '@ui/components/layout/main-container';
 import { Card, Button } from '@ui/components/common';
 import { TechBadge } from '@ui/components/common/tech-badge';
 import Link from 'next/link';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
-const mockDiagnosticos = [
-  {
-    id: '1',
-    address: 'Rua das Flores, 123 - São Paulo, SP',
-    type: 'PURCHASE',
-    status: 'COMPLETED',
-    createdAt: '2025-01-28',
-    price: 300,
-  },
-  {
-    id: '2',
-    address: 'Av. Brasil, 456 - Rio de Janeiro, RJ',
-    type: 'REGULARIZATION',
-    status: 'PENDING_REVIEW',
-    createdAt: '2025-01-30',
-    price: 300,
-  },
-];
+const transactionLabels: Record<string, string> = {
+  REGULARIZATION: 'Regularização',
+  PURCHASE: 'Compra e Venda',
+  RENTAL: 'Aluguel',
+  DONATION: 'Doação',
+  EXCHANGE: 'Permuta',
+  BUILT_TO_SUIT: 'Built-to-suit',
+  SURFACE_RIGHT: 'Direito Real de Superfície',
+  RURAL_LEASE: 'Arrendamento Rural',
+  GUARANTEES: 'Garantias',
+  FIDUCIARY: 'Alienação Fiduciária',
+  CAPITAL: 'Integralização de Capital',
+};
 
 const statusStyles: Record<string, { label: string; variant: 'default' | 'success' | 'warning' | 'error' | 'outline' }> = {
   PENDING_QUESTIONNAIRE: { label: 'Aguardando Info', variant: 'warning' },
   PENDING_DOCUMENTS: { label: 'Aguardando Docs', variant: 'warning' },
   PENDING_PAYMENT: { label: 'Aguardando Pgto', variant: 'warning' },
-  PROCESSING: { label: 'Em Análise IA', variant: 'default' }, // Default is gray/blue-ish often
+  PROCESSING: { label: 'Em Análise IA', variant: 'default' }, 
   PENDING_REVIEW: { label: 'Revisão Humana', variant: 'outline' },
   COMPLETED: { label: 'Finalizado', variant: 'success' },
 };
 
-const typeLabels: Record<string, string> = {
-  PURCHASE: 'Compra',
-  SALE: 'Venda',
-  FINANCING: 'Financiamento',
-  RENTAL: 'Locação',
-  REGULARIZATION: 'Regularização',
-};
+export default async function MeusDiagnosticosPage() {
+  const cookieStore = cookies();
 
-export default function MeusDiagnosticosPage() {
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+      },
+    }
+  );
+
+  const { data: { user } } = await supabase.auth.getUser();
+
+  let transactions: any[] = [];
+
+  if (user) {
+    const { data } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    
+    if (data) transactions = data;
+  }
+
   return (
     <>
       <Sidebar />
@@ -58,7 +75,7 @@ export default function MeusDiagnosticosPage() {
             </Link>
         }
       >
-        {mockDiagnosticos.length === 0 ? (
+        {transactions.length === 0 ? (
           <div className="bg-white border border-border border-dashed rounded-lg p-12 text-center">
             <div className="w-16 h-16 mx-auto mb-4 bg-gray-50 rounded-full flex items-center justify-center animate-pulse">
               <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -77,23 +94,26 @@ export default function MeusDiagnosticosPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {mockDiagnosticos.map((diag) => {
+            {transactions.map((diag) => {
               const status = statusStyles[diag.status] || { label: diag.status, variant: 'default' };
               
+              // Mock price if not stored in transaction (it's in payment usually, or fixed)
+              const price = 300; 
+
               return (
                 <div key={diag.id} className="group bg-white border border-border rounded-xl hover:border-primary/30 hover:shadow-glow-hover transition-all duration-200 p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <TechBadge variant="outline">
-                        {typeLabels[diag.type]}
+                        {transactionLabels[diag.type] || diag.type}
                       </TechBadge>
                       <TechBadge variant={status.variant}>
                         {status.label}
                       </TechBadge>
                     </div>
-                    <h3 className="font-bold text-lg text-text-primary group-hover:text-primary transition-colors">{diag.address}</h3>
+                    <h3 className="font-bold text-lg text-text-primary group-hover:text-primary transition-colors">{diag.property_address || 'Endereço não informado'}</h3>
                     <p className="text-xs text-text-muted mt-1 font-mono">
-                      REF: {diag.id.padStart(8, '0')} • {new Date(diag.createdAt).toLocaleDateString('pt-BR')}
+                      REF: {diag.id.slice(0, 8)} • {new Date(diag.created_at).toLocaleDateString('pt-BR')}
                     </p>
                   </div>
                   
@@ -101,7 +121,7 @@ export default function MeusDiagnosticosPage() {
                     <div className="text-right hidden sm:block">
                       <p className="text-xs text-text-secondary uppercase tracking-wider font-mono">Valor</p>
                       <p className="font-bold text-text-primary font-mono">
-                        R$ {diag.price.toFixed(2)}
+                        R$ {price.toFixed(2)}
                       </p>
                     </div>
                     <Link href={`/diagnostico/${diag.id}`}>

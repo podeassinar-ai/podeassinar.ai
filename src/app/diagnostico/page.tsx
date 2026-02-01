@@ -15,6 +15,16 @@ import {
   Alert,
   FileUploader,
 } from '@ui/components/common';
+import { createTransactionAction, updateTransactionAction } from '../actions/transaction-actions';
+import { initiatePaymentAction } from '../actions/payment-actions';
+import { saveDocumentRecordAction } from '../actions/document-actions';
+import { createClient } from '@supabase/supabase-js';
+
+// Init client-side supabase for storage upload
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 const STEPS = ['Informações', 'Questionário', 'Documentos', 'Pagamento'];
 
@@ -49,6 +59,9 @@ function DiagnosticoContent() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   
   const [currentStep, setCurrentStep] = useState(0);
+  const [transactionId, setTransactionId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
   const [formData, setFormData] = useState<FormData>({
     propertyAddress: '',
     propertyType: '',
@@ -65,8 +78,41 @@ function DiagnosticoContent() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleFilesUpload = (files: File[]) => {
-    setUploadedFiles((prev) => [...prev, ...files]);
+  const handleFilesUpload = async (files: File[]) => {
+    if (!transactionId) {
+      alert('Erro: Transação não iniciada.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const newUploadedFiles = [...uploadedFiles];
+      
+      for (const file of files) {
+        const filePath = `transactions/${transactionId}/${Date.now()}_${file.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from('documents')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        await saveDocumentRecordAction(transactionId, {
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          path: filePath,
+        });
+
+        newUploadedFiles.push(file);
+      }
+      
+      setUploadedFiles(newUploadedFiles);
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao enviar documentos.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const removeFile = (index: number) => {
@@ -86,15 +132,49 @@ function DiagnosticoContent() {
     }
   };
 
-  const handleNext = () => {
-    if (currentStep < STEPS.length - 1) {
-      setCurrentStep((prev) => prev + 1);
+  const handleNext = async () => {
+    setLoading(true);
+    try {
+      if (currentStep === 0) {
+        if (!transactionId) {
+          const tx = await createTransactionAction(tipo, formData);
+          setTransactionId(tx.id);
+        } else {
+          await updateTransactionAction(transactionId, formData);
+        }
+      } else if (currentStep === 1) {
+        if (transactionId) {
+          await updateTransactionAction(transactionId, formData);
+        }
+      }
+      
+      if (currentStep < STEPS.length - 1) {
+        setCurrentStep((prev) => prev + 1);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao salvar dados.');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleBack = () => {
     if (currentStep > 0) {
       setCurrentStep((prev) => prev - 1);
+    }
+  };
+
+  const handlePayment = async () => {
+    if (!transactionId) return;
+    setLoading(true);
+    try {
+      await initiatePaymentAction(transactionId);
+    } catch (err: any) {
+      console.error(err);
+      alert('Erro ao iniciar pagamento: ' + err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -332,7 +412,13 @@ function DiagnosticoContent() {
                    </div>
                  </div>
 
-                 <Button variant="primary" size="lg" className="w-full py-4 text-lg">
+                 <Button 
+                   variant="primary" 
+                   size="lg" 
+                   className="w-full py-4 text-lg"
+                   onClick={handlePayment}
+                   loading={loading}
+                 >
                    Ir para Pagamento (Seguro)
                  </Button>
                  
@@ -361,6 +447,7 @@ function DiagnosticoContent() {
                 variant="primary"
                 onClick={handleNext}
                 disabled={!canProceed()}
+                loading={loading}
               >
                 Continuar →
               </Button>
