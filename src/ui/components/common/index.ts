@@ -7,3 +7,5 @@ export * from './alert';
 export * from './progress';
 export * from './step-indicator';
 export * from './file-uploader';
+export * from './tech-badge';
+export * from './modal';

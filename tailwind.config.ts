@@ -31,19 +31,24 @@ const config: Config = {
           muted: '#9CA3AF', // Gray-400
           light: '#D1D5DB', // Gray-300
         },
-        border: '#F3F4F6', // Gray-100 (Very subtle)
+        border: '#E5E7EB', // Gray-200 (More visible for tech borders)
         success: '#10B981', // Emerald-500
         warning: '#F59E0B', // Amber-500
         error: '#EF4444', // Red-500
         info: '#3B82F6', // Blue-500
+        tech: {
+          dark: '#1E293B', // Slate-800
+          code: '#0F172A', // Slate-900
+        }
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'Menlo', 'Monaco', 'Courier New', 'monospace'], // Added Tech fonts
       },
       borderRadius: {
         'none': '0',
-        'sm': '0.375rem', // 6px
-        DEFAULT: '0.75rem', // 12px (More rounded for "Brilliance")
+        'sm': '0.25rem', // 4px
+        DEFAULT: '0.5rem', // 8px (Sharper than Brilliance, but still modern)
         'md': '0.75rem', // 12px
         'lg': '1rem', // 16px
         'xl': '1.5rem', // 24px
@@ -56,13 +61,15 @@ const config: Config = {
         'md': '0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02)',
         'lg': '0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02)',
         'xl': '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
-        'glow': '0 0 20px rgba(255, 87, 34, 0.3)', // Orange Glow
-        'glow-hover': '0 0 30px rgba(255, 87, 34, 0.5)',
+        'glow': '0 0 20px rgba(255, 87, 34, 0.2)', // Orange Glow
+        'glow-hover': '0 0 30px rgba(255, 87, 34, 0.4)',
+        'tech': '0 0 0 1px rgba(0,0,0,0.05), 0 2px 8px rgba(0,0,0,0.05)',
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-out',
         'fade-up': 'fadeUp 0.6s ease-out',
         'slide-in-right': 'slideInRight 0.4s ease-out',
+        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
       },
       keyframes: {
         fadeIn: {
@@ -78,6 +85,9 @@ const config: Config = {
           '100%': { transform: 'translateX(0)' },
         },
       },
+      backgroundImage: {
+        'grid-pattern': "linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px)",
+      }
     },
   },
   plugins: [],

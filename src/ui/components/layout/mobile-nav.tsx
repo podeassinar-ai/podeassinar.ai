@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState } from 'react';
+import { TransactionTypeModal } from './transaction-type-modal';
 
 const navItems = [
   {
@@ -15,7 +17,7 @@ const navItems = [
   },
   {
     href: '/diagnostico',
-    label: 'Novo',
+    label: 'Análise',
     icon: (
       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -24,7 +26,7 @@ const navItems = [
   },
   {
     href: '/meus-diagnosticos',
-    label: 'Meus',
+    label: 'Histórico',
     icon: (
       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
@@ -44,28 +46,41 @@ const navItems = [
 
 export function MobileNav() {
   const pathname = usePathname();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleNavClick = (e: React.MouseEvent, href: string) => {
+    if (href === '/diagnostico') {
+      e.preventDefault();
+      setIsModalOpen(true);
+    }
+  };
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-panel border-t border-white/20 pb-safe">
-      <div className="flex justify-around items-center h-16 px-2">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors duration-200 ${
-                isActive ? 'text-primary' : 'text-text-muted hover:text-text-secondary'
-              }`}
-            >
-              <div className={`p-1 rounded-xl transition-all ${isActive ? 'bg-orange-50' : ''}`}>
-                {item.icon}
-              </div>
-              <span className="text-[10px] font-medium">{item.label}</span>
-            </Link>
-          );
-        })}
+    <>
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-panel border-t border-white/20 pb-safe">
+        <div className="flex justify-around items-center h-16 px-2">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={(e) => handleNavClick(e, item.href)}
+                className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors duration-200 ${
+                  isActive ? 'text-primary' : 'text-text-muted hover:text-text-secondary'
+                }`}
+              >
+                <div className={`p-1 rounded-xl transition-all ${isActive ? 'bg-orange-50' : ''}`}>
+                  {item.icon}
+                </div>
+                <span className="text-[10px] font-mono font-medium tracking-tight">{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
       </div>
-    </div>
+
+      <TransactionTypeModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+    </>
   );
 }
