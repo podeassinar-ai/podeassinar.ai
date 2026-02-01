@@ -71,7 +71,7 @@ export class SupabaseUserRepository implements IUserRepository {
   }
 
   async create(user: User): Promise<User> {
-    const { data, error } = await this.supabase
+    const { error } = await this.supabase
       .from('users')
       .insert({
         id: user.id,

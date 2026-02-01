@@ -14,11 +14,13 @@ import {
   StepIndicator,
   Alert,
   FileUploader,
+  useToast,
 } from '@ui/components/common';
 import { createTransactionAction, updateTransactionAction } from '../actions/transaction-actions';
 import { initiatePaymentAction } from '../actions/payment-actions';
 import { saveDocumentRecordAction } from '../actions/document-actions';
 import { createClient } from '@supabase/supabase-js';
+import { mapGenericError } from '@/utils/error-mapping';
 
 // Init client-side supabase for storage upload
 const supabase = createClient(
@@ -56,6 +58,7 @@ interface FormData {
 function DiagnosticoContent() {
   const searchParams = useSearchParams();
   const tipo = searchParams.get('tipo') || 'PURCHASE';
+  const { addToast } = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
   
   const [currentStep, setCurrentStep] = useState(0);
@@ -80,7 +83,7 @@ function DiagnosticoContent() {
 
   const handleFilesUpload = async (files: File[]) => {
     if (!transactionId) {
-      alert('Erro: Transação não iniciada.');
+      addToast('Erro: Transação não iniciada.', 'error');
       return;
     }
 
@@ -107,9 +110,10 @@ function DiagnosticoContent() {
       }
       
       setUploadedFiles(newUploadedFiles);
-    } catch (err) {
+      addToast('Documentos enviados com sucesso!', 'success');
+    } catch (err: any) {
       console.error(err);
-      alert('Erro ao enviar documentos.');
+      addToast('Erro ao enviar documentos. ' + mapGenericError(err.message), 'error');
     } finally {
       setLoading(false);
     }
@@ -151,9 +155,9 @@ function DiagnosticoContent() {
       if (currentStep < STEPS.length - 1) {
         setCurrentStep((prev) => prev + 1);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert('Erro ao salvar dados.');
+      addToast('Erro ao salvar dados. ' + mapGenericError(err.message), 'error');
     } finally {
       setLoading(false);
     }
@@ -172,7 +176,7 @@ function DiagnosticoContent() {
       await initiatePaymentAction(transactionId);
     } catch (err: any) {
       console.error(err);
-      alert('Erro ao iniciar pagamento: ' + err.message);
+      addToast('Erro ao iniciar pagamento: ' + mapGenericError(err.message), 'error');
     } finally {
       setLoading(false);
     }

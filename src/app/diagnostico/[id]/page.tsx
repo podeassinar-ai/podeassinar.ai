@@ -3,8 +3,7 @@
 import { Suspense } from 'react';
 import { Sidebar } from '@ui/components/layout/sidebar';
 import { MainContainer } from '@ui/components/layout/main-container';
-import { Card, Button, Alert } from '@ui/components/common';
-import Link from 'next/link';
+import { Card, Button } from '@ui/components/common';
 import { useParams } from 'next/navigation';
 
 // Mock Data for the Report

@@ -3,7 +3,8 @@
 import { Suspense, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Button, Input, Card, Alert } from '@ui/components/common';
+import { Button, Input, Card, Alert, useToast } from '@ui/components/common';
+import { mapAuthError } from '@/utils/error-mapping';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -13,6 +14,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirect_to') || '/';
+  const { addToast } = useToast();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -37,7 +39,7 @@ function LoginForm() {
           },
         });
         if (error) throw error;
-        alert('Conta criada! Verifique seu email ou faça login.');
+        addToast('Conta criada! Verifique seu email ou faça login.', 'success');
         setMode('login');
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -49,7 +51,7 @@ function LoginForm() {
         router.refresh();
       }
     } catch (err: any) {
-      setError(err.message || 'Ocorreu um erro.');
+      setError(mapAuthError(err.message || ''));
     } finally {
       setLoading(false);
     }

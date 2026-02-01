@@ -1,9 +1,9 @@
 import { Sidebar } from '@ui/components/layout/sidebar';
 import { MainContainer } from '@ui/components/layout/main-container';
-import { Card, Button, SyncPaymentButton } from '@ui/components/common';
+import { Button, SyncPaymentButton } from '@ui/components/common';
 import { TechBadge } from '@ui/components/common/tech-badge';
 import Link from 'next/link';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 const transactionLabels: Record<string, string> = {

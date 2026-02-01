@@ -48,7 +48,7 @@ declare module '@abacatepay/sdk' {
     refund(billingId: string): Promise<void>;
   }
 
-  export default class AbacatePay {
+  export class AbacatePay {
     customers: Customers;
     billing: Billing;
     constructor(apiKey: string);

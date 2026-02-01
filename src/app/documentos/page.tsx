@@ -1,6 +1,6 @@
 import { Sidebar } from '@ui/components/layout/sidebar';
 import { MainContainer } from '@ui/components/layout/main-container';
-import { Card, Button, Alert } from '@ui/components/common';
+import { Alert } from '@ui/components/common';
 import { getUserDocumentsAction } from '../actions/document-actions';
 
 const typeLabels: Record<string, string> = {

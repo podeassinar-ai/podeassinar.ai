@@ -1,4 +1,4 @@
-import { LegalDiagnosis, RiskItem, LegalPathway } from '../entities/diagnosis';
+import { RiskItem, LegalPathway } from '../entities/diagnosis';
 import { DiagnosticQuestionnaire } from '../entities/questionnaire';
 import { Document } from '../entities/document';
 

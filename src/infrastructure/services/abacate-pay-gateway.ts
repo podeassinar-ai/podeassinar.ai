@@ -1,4 +1,4 @@
-import AbacatePay from '@abacatepay/sdk';
+import { AbacatePay } from '@abacatepay/sdk';
 import {
   IPaymentGateway,
   CreateCheckoutParams,
