@@ -49,6 +49,27 @@ export class SupabaseUserRepository implements IUserRepository {
     };
   }
 
+  async findByRole(role: string): Promise<User[]> {
+    const { data, error } = await this.supabase
+      .from('users')
+      .select('*')
+      .eq('role', role);
+
+    if (error || !data) return [];
+
+    return data.map(u => ({
+      id: u.id,
+      email: u.email,
+      name: u.name,
+      role: u.role,
+      documentNumber: u.document_number,
+      phone: u.phone,
+      isActive: u.is_active,
+      createdAt: new Date(u.created_at),
+      updatedAt: new Date(u.updated_at),
+    }));
+  }
+
   async create(user: User): Promise<User> {
     const { data, error } = await this.supabase
       .from('users')
@@ -85,5 +106,14 @@ export class SupabaseUserRepository implements IUserRepository {
     if (error) throw new Error(error.message);
 
     return user;
+  }
+
+  async deactivate(id: string): Promise<void> {
+    const { error } = await this.supabase
+      .from('users')
+      .update({ is_active: false })
+      .eq('id', id);
+
+    if (error) throw new Error(error.message);
   }
 }

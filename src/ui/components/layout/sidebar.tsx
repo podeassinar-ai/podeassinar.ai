@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TransactionTypeModal } from './transaction-type-modal';
-import { createClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
+import { User } from '@supabase/supabase-js';
 
-const supabase = createClient(
+const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
@@ -51,6 +52,25 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+      setLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário';
+  const userEmail = user?.email || '';
+  const userInitials = userName.slice(0, 2).toUpperCase();
 
   const handleNavClick = (e: React.MouseEvent, href: string) => {
     if (href === '/diagnostico') {
@@ -102,24 +122,36 @@ export function Sidebar() {
 
         <div className="p-6 border-t border-border">
           <div className="flex items-center justify-between px-3 py-3 rounded-xl bg-gray-50 border border-border/50 hover:bg-orange-50/50 hover:border-primary/20 transition-all">
-            <div className="flex items-center gap-3 overflow-hidden">
-              <div className="w-9 h-9 flex-shrink-0 bg-white rounded-lg flex items-center justify-center text-primary font-bold shadow-sm border border-border font-mono">
-                US
+            {loading ? (
+              <div className="flex items-center gap-3 w-full">
+                <div className="w-9 h-9 bg-gray-200 rounded-lg animate-pulse" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3 w-20 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-2 w-28 bg-gray-200 rounded animate-pulse" />
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-text-primary truncate font-mono">Usuário</p>
-                <p className="text-xs text-text-muted truncate font-mono">usuario@email.com</p>
-              </div>
-            </div>
-            <button 
-              onClick={handleLogout}
-              className="text-text-muted hover:text-red-500 transition-colors p-1"
-              title="Sair"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-            </button>
+            ) : (
+              <>
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <div className="w-9 h-9 flex-shrink-0 bg-white rounded-lg flex items-center justify-center text-primary font-bold shadow-sm border border-border font-mono">
+                    {userInitials}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-text-primary truncate font-mono">{userName}</p>
+                    <p className="text-xs text-text-muted truncate font-mono">{userEmail}</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={handleLogout}
+                  className="text-text-muted hover:text-red-500 transition-colors p-1"
+                  title="Sair"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                </button>
+              </>
+            )}
           </div>
         </div>
       </aside>

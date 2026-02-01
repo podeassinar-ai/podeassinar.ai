@@ -4,7 +4,7 @@ import {
   TransactionType,
 } from '@domain/entities/transaction';
 import { ITransactionRepository } from '@domain/interfaces/transaction-repository';
-import { getSupabaseServiceClient } from '../database/supabase-client';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 interface TransactionRow {
   id: string;
@@ -50,9 +50,10 @@ function toRow(entity: Transaction): Omit<TransactionRow, 'created_at' | 'update
 export class SupabaseTransactionRepository implements ITransactionRepository {
   private tableName = 'transactions';
 
+  constructor(private supabase: SupabaseClient) {}
+
   async create(transaction: Transaction): Promise<Transaction> {
-    const supabase = getSupabaseServiceClient();
-    const { data, error } = await supabase
+    const { data, error } = await this.supabase
       .from(this.tableName)
       .insert(toRow(transaction))
       .select()
@@ -63,8 +64,7 @@ export class SupabaseTransactionRepository implements ITransactionRepository {
   }
 
   async findById(id: string): Promise<Transaction | null> {
-    const supabase = getSupabaseServiceClient();
-    const { data, error } = await supabase
+    const { data, error } = await this.supabase
       .from(this.tableName)
       .select()
       .eq('id', id)
@@ -78,8 +78,7 @@ export class SupabaseTransactionRepository implements ITransactionRepository {
   }
 
   async findByUserId(userId: string): Promise<Transaction[]> {
-    const supabase = getSupabaseServiceClient();
-    const { data, error } = await supabase
+    const { data, error } = await this.supabase
       .from(this.tableName)
       .select()
       .eq('user_id', userId)
@@ -90,8 +89,7 @@ export class SupabaseTransactionRepository implements ITransactionRepository {
   }
 
   async updateStatus(id: string, status: TransactionStatus): Promise<Transaction> {
-    const supabase = getSupabaseServiceClient();
-    const { data, error } = await supabase
+    const { data, error } = await this.supabase
       .from(this.tableName)
       .update({ status, updated_at: new Date().toISOString() })
       .eq('id', id)
@@ -103,7 +101,6 @@ export class SupabaseTransactionRepository implements ITransactionRepository {
   }
 
   async update(transaction: Transaction): Promise<Transaction> {
-    const supabase = getSupabaseServiceClient();
     const allowedFields = {
       property_address: transaction.propertyAddress ?? null,
       registry_number: transaction.registryNumber ?? null,
@@ -111,7 +108,7 @@ export class SupabaseTransactionRepository implements ITransactionRepository {
       updated_at: new Date().toISOString(),
     };
 
-    const { data, error } = await supabase
+    const { data, error } = await this.supabase
       .from(this.tableName)
       .update(allowedFields)
       .eq('id', transaction.id)
@@ -123,8 +120,7 @@ export class SupabaseTransactionRepository implements ITransactionRepository {
   }
 
   async delete(id: string): Promise<void> {
-    const supabase = getSupabaseServiceClient();
-    const { error } = await supabase
+    const { error } = await this.supabase
       .from(this.tableName)
       .delete()
       .eq('id', id);

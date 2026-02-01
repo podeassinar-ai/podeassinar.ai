@@ -5,7 +5,7 @@ import {
   LegalBasis,
 } from '@domain/entities/document';
 import { IDocumentRepository } from '@domain/interfaces/document-repository';
-import { getSupabaseServiceClient } from '../database/supabase-client';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 interface DocumentRow {
   id: string;
@@ -60,9 +60,10 @@ function toRow(entity: Document): Omit<DocumentRow, 'created_at' | 'updated_at'>
 export class SupabaseDocumentRepository implements IDocumentRepository {
   private tableName = 'documents';
 
+  constructor(private supabase: SupabaseClient) {}
+
   async create(document: Document): Promise<Document> {
-    const supabase = getSupabaseServiceClient();
-    const { data, error } = await supabase
+    const { data, error } = await this.supabase
       .from(this.tableName)
       .insert(toRow(document))
       .select()
@@ -73,8 +74,7 @@ export class SupabaseDocumentRepository implements IDocumentRepository {
   }
 
   async findById(id: string): Promise<Document | null> {
-    const supabase = getSupabaseServiceClient();
-    const { data, error } = await supabase
+    const { data, error } = await this.supabase
       .from(this.tableName)
       .select()
       .eq('id', id)
@@ -88,8 +88,7 @@ export class SupabaseDocumentRepository implements IDocumentRepository {
   }
 
   async findByTransactionId(transactionId: string): Promise<Document[]> {
-    const supabase = getSupabaseServiceClient();
-    const { data, error } = await supabase
+    const { data, error } = await this.supabase
       .from(this.tableName)
       .select()
       .eq('transaction_id', transactionId);
@@ -99,8 +98,7 @@ export class SupabaseDocumentRepository implements IDocumentRepository {
   }
 
   async findByType(transactionId: string, type: DocumentType): Promise<Document | null> {
-    const supabase = getSupabaseServiceClient();
-    const { data, error } = await supabase
+    const { data, error } = await this.supabase
       .from(this.tableName)
       .select()
       .eq('transaction_id', transactionId)
@@ -115,8 +113,7 @@ export class SupabaseDocumentRepository implements IDocumentRepository {
   }
 
   async updateStatus(id: string, status: DocumentStatus): Promise<Document> {
-    const supabase = getSupabaseServiceClient();
-    const { data, error } = await supabase
+    const { data, error } = await this.supabase
       .from(this.tableName)
       .update({ status, updated_at: new Date().toISOString() })
       .eq('id', id)
@@ -128,8 +125,7 @@ export class SupabaseDocumentRepository implements IDocumentRepository {
   }
 
   async updateExtractedData(id: string, extractedData: Record<string, unknown>): Promise<Document> {
-    const supabase = getSupabaseServiceClient();
-    const { data, error } = await supabase
+    const { data, error } = await this.supabase
       .from(this.tableName)
       .update({ extracted_data: extractedData, updated_at: new Date().toISOString() })
       .eq('id', id)
@@ -141,8 +137,7 @@ export class SupabaseDocumentRepository implements IDocumentRepository {
   }
 
   async delete(id: string): Promise<void> {
-    const supabase = getSupabaseServiceClient();
-    const { error } = await supabase
+    const { error } = await this.supabase
       .from(this.tableName)
       .delete()
       .eq('id', id);
@@ -151,8 +146,7 @@ export class SupabaseDocumentRepository implements IDocumentRepository {
   }
 
   async findExpired(): Promise<Document[]> {
-    const supabase = getSupabaseServiceClient();
-    const { data, error } = await supabase
+    const { data, error } = await this.supabase
       .from(this.tableName)
       .select()
       .lt('expires_at', new Date().toISOString());
@@ -162,8 +156,7 @@ export class SupabaseDocumentRepository implements IDocumentRepository {
   }
 
   async deleteExpired(): Promise<number> {
-    const supabase = getSupabaseServiceClient();
-    const { data, error } = await supabase
+    const { data, error } = await this.supabase
       .from(this.tableName)
       .delete()
       .lt('expires_at', new Date().toISOString())

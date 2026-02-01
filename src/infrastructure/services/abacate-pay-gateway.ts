@@ -1,4 +1,4 @@
-import { AbacatePay } from '@abacatepay/sdk';
+import AbacatePay from '@abacatepay/sdk';
 import {
   IPaymentGateway,
   CreateCheckoutParams,
@@ -23,7 +23,7 @@ interface AbacatePayWebhookPayload {
 }
 
 export class AbacatePayGateway implements IPaymentGateway {
-  private client: ReturnType<typeof AbacatePay>;
+  private client: any; // Using any for now to bypass SDK type issues if they persist
   private webhookSecret: string;
 
   constructor() {
@@ -33,7 +33,7 @@ export class AbacatePayGateway implements IPaymentGateway {
     }
 
     this.webhookSecret = process.env.ABACATEPAY_WEBHOOK_SECRET || '';
-    this.client = AbacatePay({ secret: apiKey });
+    this.client = new AbacatePay(apiKey);
   }
 
   async createCheckout(params: CreateCheckoutParams): Promise<CheckoutResult> {

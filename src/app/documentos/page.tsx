@@ -1,27 +1,7 @@
 import { Sidebar } from '@ui/components/layout/sidebar';
 import { MainContainer } from '@ui/components/layout/main-container';
 import { Card, Button, Alert } from '@ui/components/common';
-
-const mockDocuments = [
-  {
-    id: '1',
-    name: 'Certidão de Matrícula - Rua das Flores.pdf',
-    type: 'MATRICULA',
-    transactionAddress: 'Rua das Flores, 123 - São Paulo, SP',
-    uploadedAt: '2025-01-28',
-    expiresAt: '2025-02-27',
-    status: 'VALIDATED',
-  },
-  {
-    id: '2',
-    name: 'IPTU 2025 - Av Brasil.pdf',
-    type: 'IPTU',
-    transactionAddress: 'Av. Brasil, 456 - Rio de Janeiro, RJ',
-    uploadedAt: '2025-01-30',
-    expiresAt: '2025-04-30',
-    status: 'PROCESSING',
-  },
-];
+import { getUserDocumentsAction } from '../actions/document-actions';
 
 const typeLabels: Record<string, string> = {
   MATRICULA: 'Certidão de Matrícula',
@@ -40,7 +20,9 @@ const statusStyles: Record<string, { label: string; className: string }> = {
   EXPIRED: { label: 'Expirado', className: 'text-orange-700 bg-orange-50' },
 };
 
-export default function DocumentosPage() {
+export default async function DocumentosPage() {
+  const documents = await getUserDocumentsAction();
+
   return (
     <>
       <Sidebar />
@@ -53,7 +35,7 @@ export default function DocumentosPage() {
           Conforme a LGPD, certidões são retidas apenas pelo período necessário para a análise (máximo de 90 dias).
         </Alert>
 
-        {mockDocuments.length === 0 ? (
+        {documents.length === 0 ? (
           <div className="bg-white border border-border border-dashed rounded-lg p-12 text-center">
             <div className="w-16 h-16 mx-auto mb-4 bg-gray-50 rounded-full flex items-center justify-center">
               <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -80,9 +62,8 @@ export default function DocumentosPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {mockDocuments.map((doc) => {
-                  const status = statusStyles[doc.status];
-                  const isExpiringSoon = new Date(doc.expiresAt) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+                {documents.map((doc) => {
+                  const status = statusStyles[doc.status] || statusStyles['UPLOADED'];
                   
                   return (
                     <tr key={doc.id} className="hover:bg-gray-50 transition-colors">
@@ -100,7 +81,7 @@ export default function DocumentosPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{typeLabels[doc.type]}</div>
+                        <div className="text-sm text-gray-900">{typeLabels[doc.type] || doc.type}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${status.className}`}>

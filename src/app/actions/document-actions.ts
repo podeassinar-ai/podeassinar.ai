@@ -22,8 +22,47 @@ export async function saveDocumentRecordAction(transactionId: string, fileData: 
     mimeType: fileData.type,
     fileSize: fileData.size,
     storageRef: fileData.path,
+    legalBasis: 'CONTRACT_EXECUTION', // Corrected default legal basis
   });
 
   await repo.create(document);
   return document;
+}
+
+export async function getUserDocumentsAction() {
+  const supabase = getSupabaseClient();
+  
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return [];
+  }
+
+  // RLS ensures we only see our own documents (via transaction ownership)
+  const { data, error } = await supabase
+    .from('documents')
+    .select(`
+      *,
+      transactions (
+        property_address
+      )
+    `)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching documents:', error);
+    throw new Error('Failed to fetch documents');
+  }
+
+  return data.map((doc: any) => ({
+    id: doc.id,
+    name: doc.file_name,
+    type: doc.type,
+    transactionAddress: doc.transactions?.property_address || 'Endereço não encontrado',
+    uploadedAt: doc.created_at,
+    expiresAt: doc.expires_at,
+    status: doc.status,
+  }));
 }
