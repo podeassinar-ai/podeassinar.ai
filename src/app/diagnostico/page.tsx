@@ -230,6 +230,7 @@ function DiagnosticoContent() {
                     label="Valor estimado (R$)"
                     placeholder="0,00"
                     value={formData.propertyValue}
+                    mask="currency"
                     onChange={(e) => updateField('propertyValue', e.target.value)}
                   />
                 </div>
@@ -241,6 +242,7 @@ function DiagnosticoContent() {
                       label="Número da Matrícula"
                       placeholder="Ex: 12345"
                       value={formData.registryNumber}
+                      mask="number"
                       onChange={(e) => updateField('registryNumber', e.target.value)}
                     />
                     <Input
