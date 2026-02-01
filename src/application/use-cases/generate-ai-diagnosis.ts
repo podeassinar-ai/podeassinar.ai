@@ -12,7 +12,30 @@ export interface GenerateAIDiagnosisInput {
   transactionId: string;
 }
 
+export interface GenerateAIDiagnosisConfig {
+  maxRetries?: number;
+  retryDelayMs?: number;
+  maxRetryDelayMs?: number;
+}
+
+export class AIProcessingError extends Error {
+  constructor(
+    message: string,
+    public readonly transactionId: string,
+    public readonly attempts: number,
+    public readonly isRetryable: boolean,
+    public readonly originalError?: Error
+  ) {
+    super(message);
+    this.name = 'AIProcessingError';
+  }
+}
+
 export class GenerateAIDiagnosisUseCase {
+  private maxRetries: number;
+  private retryDelayMs: number;
+  private maxRetryDelayMs: number;
+
   constructor(
     private diagnosisRepository: IDiagnosisRepository,
     private questionnaireRepository: IQuestionnaireRepository,
@@ -20,8 +43,41 @@ export class GenerateAIDiagnosisUseCase {
     private transactionRepository: ITransactionRepository,
     private aiService: IAIService,
     private storageService: IStorageService,
-    private auditService: IAuditService
-  ) {}
+    private auditService: IAuditService,
+    config?: GenerateAIDiagnosisConfig
+  ) {
+    this.maxRetries = config?.maxRetries ?? 3;
+    this.retryDelayMs = config?.retryDelayMs ?? 2000;
+    this.maxRetryDelayMs = config?.maxRetryDelayMs ?? 30000;
+  }
+
+  private async sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private calculateBackoff(attempt: number): number {
+    const delay = this.retryDelayMs * Math.pow(2, attempt - 1);
+    const jitter = Math.random() * 1000;
+    return Math.min(delay + jitter, this.maxRetryDelayMs);
+  }
+
+  private isRetryableError(error: any): boolean {
+    const retryableMessages = [
+      'rate limit',
+      'timeout',
+      'ECONNRESET',
+      'ETIMEDOUT',
+      'socket hang up',
+      '429',
+      '500',
+      '502',
+      '503',
+      '504',
+    ];
+    
+    const errorMessage = (error.message || '').toLowerCase();
+    return retryableMessages.some((msg) => errorMessage.includes(msg.toLowerCase()));
+  }
 
   async execute(input: GenerateAIDiagnosisInput): Promise<LegalDiagnosis> {
     const transaction = await this.transactionRepository.findById(input.transactionId);
@@ -59,30 +115,102 @@ export class GenerateAIDiagnosisUseCase {
       }
     }
 
-    const aiResult = await this.aiService.analyzeForDiagnosis({
-      questionnaire,
-      documents,
-      documentContents,
-    });
+    let lastError: Error | undefined;
+    let attempts = 0;
 
-    const updatedDiagnosis = await this.diagnosisRepository.updateContent(diagnosis.id, {
-      propertyStatus: aiResult.propertyStatus,
-      risks: aiResult.risks,
-      pathways: aiResult.pathways,
-      summary: aiResult.summary,
-    });
+    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+      attempts = attempt;
+      
+      try {
+        await this.auditService.log({
+          userId: transaction.userId,
+          action: 'UPDATE',
+          resource: 'DIAGNOSIS',
+          resourceId: diagnosis.id,
+          metadata: { action: 'ai_processing_attempt', attempt },
+        });
 
-    await this.diagnosisRepository.updateStatus(diagnosis.id, 'AI_GENERATED');
-    await this.transactionRepository.updateStatus(input.transactionId, 'PENDING_REVIEW');
+        const aiResult = await this.aiService.analyzeForDiagnosis({
+          questionnaire,
+          documents,
+          documentContents,
+        });
 
+        const updatedDiagnosis = await this.diagnosisRepository.updateContent(diagnosis.id, {
+          propertyStatus: aiResult.propertyStatus,
+          risks: aiResult.risks,
+          pathways: aiResult.pathways,
+          summary: aiResult.summary,
+        });
+
+        await this.diagnosisRepository.updateStatus(diagnosis.id, 'AI_GENERATED');
+        await this.transactionRepository.updateStatus(input.transactionId, 'PENDING_REVIEW');
+
+        await this.auditService.log({
+          userId: transaction.userId,
+          action: 'UPDATE',
+          resource: 'DIAGNOSIS',
+          resourceId: diagnosis.id,
+          metadata: { 
+            action: 'ai_generated', 
+            confidence: aiResult.confidence,
+            attempts,
+          },
+        });
+
+        return updatedDiagnosis;
+      } catch (error: any) {
+        lastError = error;
+        
+        const isRetryable = this.isRetryableError(error);
+
+        await this.auditService.log({
+          userId: transaction.userId,
+          action: 'UPDATE',
+          resource: 'DIAGNOSIS',
+          resourceId: diagnosis.id,
+          metadata: { 
+            action: 'ai_processing_error', 
+            attempt,
+            error: error.message,
+            isRetryable,
+          },
+        });
+
+        if (!isRetryable || attempt === this.maxRetries) {
+          break;
+        }
+
+        const backoffMs = this.calculateBackoff(attempt);
+        console.log(
+          `AI processing attempt ${attempt} failed for transaction ${input.transactionId}. ` +
+          `Retrying in ${backoffMs}ms...`
+        );
+        
+        await this.sleep(backoffMs);
+      }
+    }
+
+    await this.transactionRepository.updateStatus(input.transactionId, 'ERROR');
+    
     await this.auditService.log({
       userId: transaction.userId,
       action: 'UPDATE',
-      resource: 'DIAGNOSIS',
-      resourceId: diagnosis.id,
-      metadata: { action: 'ai_generated', confidence: aiResult.confidence },
+      resource: 'TRANSACTION',
+      resourceId: input.transactionId,
+      metadata: { 
+        action: 'ai_processing_failed', 
+        totalAttempts: attempts,
+        error: lastError?.message,
+      },
     });
 
-    return updatedDiagnosis;
+    throw new AIProcessingError(
+      `AI processing failed after ${attempts} attempts: ${lastError?.message}`,
+      input.transactionId,
+      attempts,
+      false,
+      lastError
+    );
   }
 }

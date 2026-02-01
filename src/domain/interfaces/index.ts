@@ -2,6 +2,7 @@ export * from './transaction-repository';
 export * from './document-repository';
 export * from './questionnaire-repository';
 export * from './diagnosis-repository';
+export * from './fulfillment-repository';
 export * from './user-repository';
 export * from './payment-repository';
 export * from './storage-service';

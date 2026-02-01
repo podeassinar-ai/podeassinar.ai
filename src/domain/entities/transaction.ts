@@ -13,7 +13,8 @@ export type TransactionStatus =
   | 'PROCESSING'
   | 'PENDING_REVIEW'
   | 'COMPLETED'
-  | 'CANCELLED';
+  | 'CANCELLED'
+  | 'ERROR';
 
 export interface Transaction {
   id: string;

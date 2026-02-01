@@ -1,3 +1,6 @@
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
+
 export interface RateLimitConfig {
   windowMs: number;
   maxRequests: number;
@@ -9,12 +12,16 @@ export interface RateLimitResult {
   resetAt: Date;
 }
 
+export interface IRateLimiter {
+  check(key: string): Promise<RateLimitResult>;
+}
+
 interface RateLimitEntry {
   count: number;
   resetAt: number;
 }
 
-export class InMemoryRateLimiter {
+export class InMemoryRateLimiter implements IRateLimiter {
   private store: Map<string, RateLimitEntry> = new Map();
   private config: RateLimitConfig;
 
@@ -64,16 +71,62 @@ export class InMemoryRateLimiter {
   }
 }
 
+export class UpstashRateLimiter implements IRateLimiter {
+  private ratelimit: Ratelimit;
+  private windowMs: number;
+
+  constructor(config: RateLimitConfig) {
+    const redis = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL!,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    });
+
+    const windowSeconds = Math.ceil(config.windowMs / 1000);
+    this.windowMs = config.windowMs;
+
+    this.ratelimit = new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(config.maxRequests, `${windowSeconds} s`),
+      analytics: true,
+      prefix: 'podeassinar',
+    });
+  }
+
+  async check(key: string): Promise<RateLimitResult> {
+    const { success, remaining, reset } = await this.ratelimit.limit(key);
+
+    return {
+      allowed: success,
+      remaining,
+      resetAt: new Date(reset),
+    };
+  }
+}
+
+function isUpstashConfigured(): boolean {
+  return !!(
+    process.env.UPSTASH_REDIS_REST_URL &&
+    process.env.UPSTASH_REDIS_REST_TOKEN
+  );
+}
+
+function createRateLimiter(config: RateLimitConfig): IRateLimiter {
+  if (isUpstashConfigured()) {
+    return new UpstashRateLimiter(config);
+  }
+  return new InMemoryRateLimiter(config);
+}
+
 export const defaultRateLimiters = {
-  api: new InMemoryRateLimiter({
+  api: createRateLimiter({
     windowMs: 60 * 1000,
     maxRequests: 60,
   }),
-  auth: new InMemoryRateLimiter({
+  auth: createRateLimiter({
     windowMs: 15 * 60 * 1000,
     maxRequests: 5,
   }),
-  webhook: new InMemoryRateLimiter({
+  webhook: createRateLimiter({
     windowMs: 60 * 1000,
     maxRequests: 100,
   }),

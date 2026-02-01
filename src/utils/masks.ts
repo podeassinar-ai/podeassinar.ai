@@ -1,5 +1,5 @@
 export const formatCurrency = (value: string | number): string => {
-  let val = String(value).replace(/\D/g, '');
+  const val = String(value).replace(/\D/g, '');
   
   if (!val) return '';
   
