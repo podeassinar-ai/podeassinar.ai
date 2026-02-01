@@ -1,7 +1,9 @@
 'use server';
 
 import { InitiatePaymentUseCase } from '@application/use-cases/initiate-payment';
+import { SyncPaymentStatusUseCase } from '@application/use-cases/sync-payment-status';
 import { AbacatePayGateway } from '@infrastructure/services/abacate-pay-gateway';
+import { SupabaseAuditService } from '@infrastructure/services/supabase-audit-service';
 import { 
   SupabaseTransactionRepository, 
   SupabasePaymentRepository, 
@@ -9,6 +11,7 @@ import {
 } from '@infrastructure/repositories';
 import { getSupabaseClient } from '@infrastructure/database/supabase-client';
 import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 
 export async function initiatePaymentAction(transactionId: string) {
   const supabase = getSupabaseClient();
@@ -48,5 +51,84 @@ export async function initiatePaymentAction(transactionId: string) {
     }
     console.error('Payment initiation failed:', error);
     throw new Error('Failed to initiate payment: ' + error.message);
+  }
+}
+
+export async function syncPaymentStatusAction(paymentId: string) {
+  const supabase = getSupabaseClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  const transactionRepo = new SupabaseTransactionRepository(supabase);
+  const paymentRepo = new SupabasePaymentRepository(supabase);
+  const paymentGateway = new AbacatePayGateway();
+  const auditService = new SupabaseAuditService();
+
+  const useCase = new SyncPaymentStatusUseCase(
+    paymentRepo,
+    transactionRepo,
+    paymentGateway,
+    auditService
+  );
+
+  try {
+    const result = await useCase.execute({
+      paymentId,
+      userId: user.id,
+    });
+
+    revalidatePath('/meus-diagnosticos');
+    
+    return result;
+  } catch (error: any) {
+    console.error('Payment sync failed:', error);
+    throw new Error('Failed to sync payment status: ' + error.message);
+  }
+}
+
+export async function syncPaymentByTransactionAction(transactionId: string) {
+  const supabase = getSupabaseClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  const transactionRepo = new SupabaseTransactionRepository(supabase);
+  const paymentRepo = new SupabasePaymentRepository(supabase);
+  const paymentGateway = new AbacatePayGateway();
+  const auditService = new SupabaseAuditService();
+
+  const payments = await paymentRepo.findByTransactionId(transactionId);
+  const pendingPayment = payments.find(p => 
+    p.status === 'PENDING' || p.status === 'PROCESSING'
+  );
+
+  if (!pendingPayment) {
+    return { synced: false, message: 'No pending payment found for this transaction' };
+  }
+
+  const useCase = new SyncPaymentStatusUseCase(
+    paymentRepo,
+    transactionRepo,
+    paymentGateway,
+    auditService
+  );
+
+  try {
+    const result = await useCase.execute({
+      paymentId: pendingPayment.id,
+      userId: user.id,
+    });
+
+    revalidatePath('/meus-diagnosticos');
+    
+    return result;
+  } catch (error: any) {
+    console.error('Payment sync failed:', error);
+    throw new Error('Failed to sync payment status: ' + error.message);
   }
 }

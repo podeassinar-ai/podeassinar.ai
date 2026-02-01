@@ -1,6 +1,6 @@
 import { Sidebar } from '@ui/components/layout/sidebar';
 import { MainContainer } from '@ui/components/layout/main-container';
-import { Card, Button } from '@ui/components/common';
+import { Card, Button, SyncPaymentButton } from '@ui/components/common';
 import { TechBadge } from '@ui/components/common/tech-badge';
 import Link from 'next/link';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
@@ -124,11 +124,14 @@ export default async function MeusDiagnosticosPage() {
                         R$ {price.toFixed(2)}
                       </p>
                     </div>
-                    <Link href={`/diagnostico/${diag.id}`}>
-                      <Button variant="secondary" size="sm" className="border-gray-300">
-                        Ver Relatório
-                      </Button>
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <SyncPaymentButton transactionId={diag.id} status={diag.status} />
+                      <Link href={`/diagnostico/${diag.id}`}>
+                        <Button variant="secondary" size="sm" className="border-gray-300">
+                          Ver Relatório
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
                 </div>
               );

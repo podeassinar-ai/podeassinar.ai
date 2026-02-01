@@ -3,6 +3,11 @@ import {
   IPaymentGateway,
   CreateCheckoutParams,
   CheckoutResult,
+  CheckoutDetails,
+  CheckoutStatus,
+  PixStatus,
+  StoreInfo,
+  RevenueMetrics,
   PaymentWebhookEvent,
   PaymentWebhookEventType,
 } from '@domain/interfaces/payment-gateway';
@@ -35,8 +40,8 @@ export class AbacatePayGateway implements IPaymentGateway {
     const customer = await this.client.customers.create({
       email: params.customer.email,
       name: params.customer.name,
-      cellphone: '',
-      taxId: params.customer.taxId || '',
+      cellphone: params.customer.cellphone,
+      taxId: params.customer.taxId,
     });
 
     const checkout = await this.client.checkouts.create({
@@ -108,12 +113,98 @@ export class AbacatePayGateway implements IPaymentGateway {
   }
 
   async refund(externalId: string): Promise<void> {
-    // Note: checkouts might not have direct refund, checking if payouts or other methods exist
-    // Assuming billing.refund existed in v1, but in v2 it might be different.
-    // For now, I'll comment this out or leave as TODO if I can't find it easily.
-    // The type definition showed payouts, but that's for paying out money.
-    // Refund might be on the billing object or checkout object.
-    // Given the task is about payment flow, refund is secondary.
     console.warn('Refund not implemented for v2 yet');
+  }
+
+  async getCheckout(id: string): Promise<CheckoutDetails> {
+    const checkout = await this.client.checkouts.get(id);
+    
+    const statusMap: Record<string, CheckoutStatus> = {
+      'PENDING': 'PENDING',
+      'EXPIRED': 'EXPIRED',
+      'COMPLETED': 'COMPLETED',
+      'PAID': 'COMPLETED',
+    };
+
+    return {
+      id: checkout.data.id,
+      url: checkout.data.url,
+      status: statusMap[checkout.data.status] || 'PENDING',
+      amount: checkout.data.amount || 0,
+      metadata: checkout.data.metadata as Record<string, string> | undefined,
+      createdAt: new Date(checkout.data.createdAt),
+    };
+  }
+
+  async listCheckouts(): Promise<CheckoutDetails[]> {
+    const checkouts = await this.client.checkouts.list();
+    
+    const statusMap: Record<string, CheckoutStatus> = {
+      'PENDING': 'PENDING',
+      'EXPIRED': 'EXPIRED',
+      'COMPLETED': 'COMPLETED',
+      'PAID': 'COMPLETED',
+    };
+
+    return checkouts.data.map((checkout: any) => ({
+      id: checkout.id,
+      url: checkout.url,
+      status: statusMap[checkout.status] || 'PENDING',
+      amount: checkout.amount || 0,
+      metadata: checkout.metadata as Record<string, string> | undefined,
+      createdAt: new Date(checkout.createdAt),
+    }));
+  }
+
+  async checkPixStatus(pixId: string): Promise<PixStatus> {
+    const status = await this.client.pix.status(pixId);
+    
+    const pixStatusMap: Record<string, 'PENDING' | 'PAID' | 'EXPIRED'> = {
+      'PENDING': 'PENDING',
+      'PAID': 'PAID',
+      'EXPIRED': 'EXPIRED',
+      'COMPLETED': 'PAID',
+    };
+
+    return {
+      id: status.data.id,
+      status: pixStatusMap[status.data.status] || 'PENDING',
+      amount: status.data.amount || 0,
+      paidAt: status.data.paidAt ? new Date(status.data.paidAt) : undefined,
+    };
+  }
+
+  async simulatePixPayment(pixId: string): Promise<PixStatus> {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('Payment simulation is not allowed in production');
+    }
+
+    const result = await this.client.pix.simulate(pixId);
+    
+    return {
+      id: result.data.id,
+      status: 'PAID',
+      amount: result.data.amount || 0,
+      paidAt: new Date(),
+    };
+  }
+
+  async getStoreInfo(): Promise<StoreInfo> {
+    const store = await this.client.store.get();
+    
+    return {
+      id: store.data.id,
+      name: store.data.name,
+      balance: store.data.balance || 0,
+    };
+  }
+
+  async getRevenueMetrics(): Promise<RevenueMetrics> {
+    const merchant = await this.client.mrr.merchant();
+    
+    return {
+      mrr: merchant.data.mrr || 0,
+      totalRevenue: merchant.data.totalRevenue || 0,
+    };
   }
 }

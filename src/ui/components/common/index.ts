@@ -9,3 +9,4 @@ export * from './step-indicator';
 export * from './file-uploader';
 export * from './tech-badge';
 export * from './modal';
+export * from './sync-payment-button';

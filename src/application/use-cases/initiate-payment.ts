@@ -49,6 +49,14 @@ export class InitiatePaymentUseCase {
       throw new Error('User not found');
     }
 
+    if (!user.phone) {
+      throw new Error('User phone number is required for payment');
+    }
+
+    if (!user.documentNumber) {
+      throw new Error('User document number (CPF/CNPJ) is required for payment');
+    }
+
     const existingPayments = await this.paymentRepository.findByTransactionId(input.transactionId);
     const pendingPayment = existingPayments.find(p => p.status === 'PENDING' || p.status === 'PROCESSING');
     if (pendingPayment) {
@@ -80,6 +88,7 @@ export class InitiatePaymentUseCase {
       customer: {
         email: user.email,
         name: user.name,
+        cellphone: user.phone,
         taxId: user.documentNumber,
       },
     });

@@ -6,3 +6,4 @@ export * from './process-payment-webhook';
 export * from './generate-ai-diagnosis';
 export * from './review-diagnosis';
 export * from './deliver-diagnosis';
+export * from './sync-payment-status';
