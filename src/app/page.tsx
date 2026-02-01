@@ -1,6 +1,8 @@
 import { Sidebar } from '@ui/components/layout/sidebar';
 import { MainContainer } from '@ui/components/layout/main-container';
 import Link from 'next/link';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 // Icons as components for cleaner usage
 const Icons = {
@@ -146,7 +148,31 @@ const transactionTypes = [
   },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const cookieStore = await cookies();
+  
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+      },
+    }
+  );
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const isAuthenticated = !!user;
+  const getDiagnosticoHref = (tipo?: string) => {
+    const base = tipo ? `/diagnostico?tipo=${tipo}` : '/diagnostico';
+    return isAuthenticated ? base : `/login?redirect_to=${encodeURIComponent(base)}`;
+  };
+
   return (
     <>
       <Sidebar />
@@ -173,7 +199,7 @@ export default function HomePage() {
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <Link href="/diagnostico">
+                  <Link href={getDiagnosticoHref()}>
                     <button className="btn-primary w-full sm:w-auto text-lg px-8 py-4 flex items-center gap-2 group">
                       Iniciar Due Diligence
                       <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -256,7 +282,7 @@ export default function HomePage() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
             {transactionTypes.map((type, index) => (
-              <Link key={type.id} href={`/diagnostico?tipo=${type.id}`}>
+              <Link key={type.id} href={getDiagnosticoHref(type.id)}>
                 <div 
                   className="group relative overflow-hidden bg-white border border-border rounded-2xl p-6 hover:shadow-glow hover:border-primary/40 hover:-translate-y-1 transition-all duration-300 h-full flex flex-col items-center text-center cursor-pointer min-h-[140px]"
                   style={{ animationDelay: `${index * 50}ms` }}
