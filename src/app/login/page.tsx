@@ -1,14 +1,14 @@
 'use client';
 
 import { Suspense, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, Input, Card, Alert, useToast } from '@ui/components/common';
 import { mapAuthError } from '@/utils/error-mapping';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createBrowserClient(supabaseUrl, supabaseKey);
 
 function LoginForm() {
   const router = useRouter();
@@ -47,8 +47,10 @@ function LoginForm() {
           password,
         });
         if (error) throw error;
-        router.push(redirectTo);
+        
+        // Force refresh to update server components with new cookies
         router.refresh();
+        router.push(redirectTo);
       }
     } catch (err: any) {
       setError(mapAuthError(err.message || ''));
