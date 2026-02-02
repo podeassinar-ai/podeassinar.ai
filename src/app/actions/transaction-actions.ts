@@ -1,9 +1,14 @@
 'use server';
 
 import { createClient } from '@infrastructure/database/supabase-server';
-import { SupabaseTransactionRepository } from '@infrastructure/repositories';
-import { createTransaction } from '@domain/entities/transaction';
-import { v4 as uuidv4 } from 'uuid';
+import {
+  SupabaseTransactionRepository,
+  SupabaseDiagnosisRepository,
+  SupabaseQuestionnaireRepository
+} from '@infrastructure/repositories';
+import { CreateDiagnosticTransactionUseCase } from '@application/use-cases/create-diagnostic-transaction';
+import { SupabaseAuditService } from '@infrastructure/services/supabase-audit-service';
+import { TransactionType } from '@domain/entities/transaction';
 
 export async function createTransactionAction(type: string, data: any) {
   const supabase = await createClient();
@@ -11,24 +16,27 @@ export async function createTransactionAction(type: string, data: any) {
 
   if (!user) throw new Error('Unauthorized');
 
-  const repo = new SupabaseTransactionRepository(supabase);
+  const transactionRepo = new SupabaseTransactionRepository(supabase);
+  const questionnaireRepo = new SupabaseQuestionnaireRepository(supabase);
+  const diagnosisRepo = new SupabaseDiagnosisRepository(supabase);
+  const auditService = new SupabaseAuditService();
 
-  const transaction = createTransaction({
-    id: uuidv4(),
+  const useCase = new CreateDiagnosticTransactionUseCase(
+    transactionRepo,
+    questionnaireRepo,
+    diagnosisRepo,
+    auditService
+  );
+
+  const result = await useCase.execute({
     userId: user.id,
-    type: type as any,
+    type: type as TransactionType,
     propertyAddress: data.propertyAddress,
     registryNumber: data.registryNumber,
     registryOffice: data.registryOffice,
-    propertyType: data.propertyType,
-    propertyValue: data.propertyValue,
-    hasMatricula: data.hasMatricula,
-    matriculaOption: data.matriculaOption,
-    additionalInfo: data.additionalInfo,
   });
 
-  await repo.create(transaction);
-  return transaction;
+  return result.transaction;
 }
 
 export async function updateTransactionAction(id: string, data: any) {

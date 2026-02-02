@@ -1,9 +1,9 @@
 'use server';
 
-import { getSupabaseClient } from '@infrastructure/database/supabase-client';
-import { 
+import { createClient } from '@infrastructure/database/supabase-server';
+import {
   SupabaseTransactionRepository,
-  SupabaseDiagnosisRepository 
+  SupabaseDiagnosisRepository
 } from '@infrastructure/repositories';
 import { LegalDiagnosis } from '@domain/entities/diagnosis';
 import { Transaction } from '@domain/entities/transaction';
@@ -14,9 +14,9 @@ export interface DiagnosisReportData {
 }
 
 export async function getDiagnosisById(diagnosisId: string): Promise<DiagnosisReportData | null> {
-  const supabase = getSupabaseClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   if (!user) {
     throw new Error('Unauthorized');
   }
@@ -42,9 +42,9 @@ export async function getDiagnosisById(diagnosisId: string): Promise<DiagnosisRe
 }
 
 export async function getDiagnosisByTransactionId(transactionId: string): Promise<DiagnosisReportData | null> {
-  const supabase = getSupabaseClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   if (!user) {
     throw new Error('Unauthorized');
   }
@@ -70,9 +70,9 @@ export async function getDiagnosisByTransactionId(transactionId: string): Promis
 }
 
 export async function getUserDiagnoses(): Promise<DiagnosisReportData[]> {
-  const supabase = getSupabaseClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   if (!user) {
     throw new Error('Unauthorized');
   }

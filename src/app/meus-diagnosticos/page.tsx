@@ -24,7 +24,7 @@ const statusStyles: Record<string, { label: string; variant: 'default' | 'succes
   PENDING_QUESTIONNAIRE: { label: 'Aguardando Info', variant: 'warning' },
   PENDING_DOCUMENTS: { label: 'Aguardando Docs', variant: 'warning' },
   PENDING_PAYMENT: { label: 'Aguardando Pgto', variant: 'warning' },
-  PROCESSING: { label: 'Em Análise IA', variant: 'default' }, 
+  PROCESSING: { label: 'Em Análise IA', variant: 'default' },
   PENDING_REVIEW: { label: 'Revisão Humana', variant: 'outline' },
   COMPLETED: { label: 'Finalizado', variant: 'success' },
 };
@@ -54,7 +54,7 @@ export default async function MeusDiagnosticosPage() {
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
-    
+
     if (data) transactions = data;
   }
 
@@ -65,14 +65,14 @@ export default async function MeusDiagnosticosPage() {
         title="Minhas Análises"
         subtitle="Histórico de Due Diligence e relatórios gerados"
         action={
-           <Link href="/diagnostico">
-              <Button variant="primary" className="flex items-center gap-2">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Nova Análise
-              </Button>
-            </Link>
+          <Link href="/diagnostico">
+            <Button variant="primary" className="flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Nova Análise
+            </Button>
+          </Link>
         }
       >
         {transactions.length === 0 ? (
@@ -96,9 +96,9 @@ export default async function MeusDiagnosticosPage() {
           <div className="space-y-4">
             {transactions.map((diag) => {
               const status = statusStyles[diag.status] || { label: diag.status, variant: 'default' };
-              
+
               // Mock price if not stored in transaction (it's in payment usually, or fixed)
-              const price = 300; 
+              const price = 300;
 
               return (
                 <div key={diag.id} className="group bg-white border border-border rounded-xl hover:border-primary/30 hover:shadow-glow-hover transition-all duration-200 p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -116,7 +116,7 @@ export default async function MeusDiagnosticosPage() {
                       REF: {diag.id.slice(0, 8)} • {new Date(diag.created_at).toLocaleDateString('pt-BR')}
                     </p>
                   </div>
-                  
+
                   <div className="flex items-center gap-6">
                     <div className="text-right hidden sm:block">
                       <p className="text-xs text-text-secondary uppercase tracking-wider font-mono">Valor</p>
@@ -126,11 +126,23 @@ export default async function MeusDiagnosticosPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <SyncPaymentButton transactionId={diag.id} status={diag.status} />
-                      <Link href={`/diagnostico/${diag.id}`}>
-                        <Button variant="secondary" size="sm" className="border-gray-300">
-                          Ver Relatório
+                      {['PENDING_QUESTIONNAIRE', 'PENDING_DOCUMENTS', 'PENDING_PAYMENT'].includes(diag.status) ? (
+                        <Link href={`/diagnostico?id=${diag.id}`}>
+                          <Button variant="primary" size="sm">
+                            Continuar
+                          </Button>
+                        </Link>
+                      ) : ['PROCESSING', 'PENDING_REVIEW'].includes(diag.status) ? (
+                        <Button variant="secondary" size="sm" className="border-gray-300" disabled>
+                          Processando...
                         </Button>
-                      </Link>
+                      ) : (
+                        <Link href={`/diagnostico/${diag.id}`}>
+                          <Button variant="secondary" size="sm" className="border-gray-300">
+                            Ver Relatório
+                          </Button>
+                        </Link>
+                      )}
                     </div>
                   </div>
                 </div>

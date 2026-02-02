@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Topbar } from '@ui/components/layout/topbar';
 import { MainContainer } from '@ui/components/layout/main-container';
@@ -63,13 +63,15 @@ interface FormData {
 function DiagnosticoContent() {
   const searchParams = useSearchParams();
   const tipoSlug = searchParams.get('tipo');
+  const existingId = searchParams.get('id');
   const tipo = getIdFromSlug(tipoSlug || 'compra'); // Default to compra/PURCHASE if empty
   const { addToast } = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [currentStep, setCurrentStep] = useState(0);
-  const [transactionId, setTransactionId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [transactionId, setTransactionId] = useState<string | null>(existingId);
+  const [loading, setLoading] = useState(!!existingId);
+  const [initialLoading, setInitialLoading] = useState(!!existingId);
 
   const [formData, setFormData] = useState<FormData>({
     propertyAddress: '',
@@ -82,6 +84,50 @@ function DiagnosticoContent() {
     additionalInfo: '',
   });
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+
+  // Load existing transaction if resuming
+  useEffect(() => {
+    async function loadTransaction() {
+      if (!existingId) return;
+      try {
+        const { data, error } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('id', existingId)
+          .single();
+
+        if (error || !data) {
+          addToast('Transação não encontrada', 'error');
+          return;
+        }
+
+        setFormData({
+          propertyAddress: data.property_address || '',
+          propertyType: data.property_type || '',
+          registryNumber: data.registry_number || '',
+          registryOffice: data.registry_office || '',
+          hasMatricula: data.has_matricula || '',
+          matriculaOption: data.matricula_option || '',
+          propertyValue: data.property_value || '',
+          additionalInfo: data.additional_info || '',
+        });
+
+        // Determine starting step based on status
+        const statusStepMap: Record<string, number> = {
+          PENDING_QUESTIONNAIRE: 1,
+          PENDING_DOCUMENTS: 2,
+          PENDING_PAYMENT: 3,
+        };
+        setCurrentStep(statusStepMap[data.status] ?? 0);
+      } catch (err) {
+        console.error('Error loading transaction:', err);
+      } finally {
+        setInitialLoading(false);
+        setLoading(false);
+      }
+    }
+    loadTransaction();
+  }, [existingId, addToast]);
 
   const updateField = (field: keyof FormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
