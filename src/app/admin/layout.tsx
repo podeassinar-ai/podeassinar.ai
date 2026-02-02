@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { createBrowserClient } from '@supabase/ssr';
 
 const adminNavItems = [
@@ -66,8 +67,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="flex justify-between h-16">
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
-                <Link href="/admin/dashboard" className="text-xl font-bold text-primary">
-                  PodeAssinar Admin
+                <Link href="/admin/dashboard" className="flex items-center gap-3">
+                  <div className="relative w-20 h-20 -my-4">
+                     <Image 
+                       src="/logo.png" 
+                       alt="PodeAssinar Logo" 
+                       fill
+                       className="object-contain"
+                     />
+                  </div>
+                  <span className="text-xl font-bold text-primary -ml-2">Admin</span>
                 </Link>
               </div>
               <div className="hidden sm:ml-8 sm:flex sm:space-x-4">

@@ -5,6 +5,9 @@ import '@ui/styles/globals.css';
 export const metadata: Metadata = {
   title: 'PodeAssinar.ai - Diagnóstico Jurídico Imobiliário',
   description: 'Plataforma jurídica imobiliária com diagnóstico assistido por IA',
+  icons: {
+    icon: '/logo.png',
+  },
 };
 
 export default function RootLayout({

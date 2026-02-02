@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { TransactionTypeModal } from './transaction-type-modal';
@@ -91,17 +92,21 @@ export function Sidebar() {
     <>
       <aside className="hidden md:flex fixed left-0 top-0 h-screen w-64 bg-white border-r border-border flex-col shadow-lg z-50">
         <div className="p-8">
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="relative">
-              <div className="w-10 h-10 bg-gradient-to-br from-primary to-orange-400 rounded-xl flex items-center justify-center shadow-glow group-hover:shadow-glow-hover transition-all duration-300">
-                 <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                 </svg>
-              </div>
+          <Link href="/" className="flex items-center gap-4 group">
+            {/* Container pequeno para o layout, mas logo grande transbordando */}
+            <div className="relative w-12 h-12 flex-shrink-0">
+               <div className="absolute w-32 h-32 -top-10 -left-10">
+                  <Image 
+                    src="/logo.png" 
+                    alt="PodeAssinar Logo" 
+                    fill
+                    className="object-contain"
+                  />
+               </div>
             </div>
-            <div>
-              <span className="block font-bold text-xl text-text-primary tracking-tight leading-none group-hover:text-primary transition-colors">PodeAssinar</span>
-              <span className="text-[10px] text-text-muted font-bold uppercase tracking-widest font-mono">AI ENGINE</span>
+            <div className="flex flex-col justify-center">
+              <span className="block font-bold text-xl text-text-primary tracking-tight leading-tight group-hover:text-primary transition-colors">PodeAssinar</span>
+              <span className="text-[10px] text-text-muted font-bold uppercase tracking-widest font-mono mt-0.5">AI ENGINE</span>
             </div>
           </Link>
         </div>

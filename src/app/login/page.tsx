@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useState } from 'react';
+import Image from 'next/image';
 import { createBrowserClient } from '@supabase/ssr';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, Input, Card, Alert, useToast } from '@ui/components/common';
@@ -62,10 +63,14 @@ function LoginForm() {
   return (
     <Card className="w-full max-w-md relative z-10">
       <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-orange-500 mb-4 shadow-glow">
-          <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+        <div className="relative w-60 h-60 mx-auto -mb-10">
+           <Image 
+             src="/logo.png" 
+             alt="PodeAssinar Logo" 
+             fill
+             className="object-contain"
+             priority
+           />
         </div>
         <h1 className="text-2xl font-bold text-text-primary">
           {mode === 'login' ? 'Bem-vindo de volta' : 'Criar Conta'}

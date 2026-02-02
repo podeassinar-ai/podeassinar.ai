@@ -70,6 +70,7 @@ const config: Config = {
         'fade-up': 'fadeUp 0.6s ease-out',
         'slide-in-right': 'slideInRight 0.4s ease-out',
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'bounce-slow': 'bounce 3s infinite',
       },
       keyframes: {
         fadeIn: {
