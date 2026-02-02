@@ -42,6 +42,7 @@ export interface LegalDiagnosis {
   risks: RiskItem[];
   pathways: LegalPathway[];
   summary: string;
+  aiConfidence?: number;
   aiGeneratedAt?: Date;
   reviewedBy?: string;
   reviewedAt?: Date;

@@ -15,6 +15,7 @@ interface DiagnosisRow {
   risks: RiskItem[];
   pathways: LegalPathway[];
   summary: string;
+  ai_confidence: number | null;
   ai_generated_at: string | null;
   reviewed_by: string | null;
   reviewed_at: string | null;
@@ -32,6 +33,7 @@ function toEntity(row: DiagnosisRow): LegalDiagnosis {
     risks: row.risks ?? [],
     pathways: row.pathways ?? [],
     summary: row.summary,
+    aiConfidence: row.ai_confidence ?? undefined,
     aiGeneratedAt: row.ai_generated_at ? new Date(row.ai_generated_at) : undefined,
     reviewedBy: row.reviewed_by ?? undefined,
     reviewedAt: row.reviewed_at ? new Date(row.reviewed_at) : undefined,
@@ -52,6 +54,7 @@ function toRow(
     risks: entity.risks,
     pathways: entity.pathways,
     summary: entity.summary,
+    ai_confidence: entity.aiConfidence ?? null,
     ai_generated_at: entity.aiGeneratedAt?.toISOString() ?? null,
     reviewed_by: entity.reviewedBy ?? null,
     reviewed_at: entity.reviewedAt?.toISOString() ?? null,
@@ -131,6 +134,7 @@ export class SupabaseDiagnosisRepository implements IDiagnosisRepository {
       risks?: RiskItem[];
       pathways?: LegalPathway[];
       summary?: string;
+      aiConfidence?: number;
     }
   ): Promise<LegalDiagnosis> {
     const updateData: Record<string, unknown> = {
@@ -148,6 +152,9 @@ export class SupabaseDiagnosisRepository implements IDiagnosisRepository {
     }
     if (content.summary !== undefined) {
       updateData.summary = content.summary;
+    }
+    if (content.aiConfidence !== undefined) {
+      updateData.ai_confidence = content.aiConfidence;
     }
 
     const { data, error } = await this.supabase

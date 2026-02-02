@@ -10,6 +10,7 @@ export interface IDiagnosisRepository {
     risks?: RiskItem[];
     pathways?: LegalPathway[];
     summary?: string;
+    aiConfidence?: number;
   }): Promise<LegalDiagnosis>;
   markReviewed(id: string, reviewerId: string): Promise<LegalDiagnosis>;
   markDelivered(id: string): Promise<LegalDiagnosis>;

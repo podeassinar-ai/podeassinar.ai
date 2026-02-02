@@ -4,6 +4,7 @@ import { AbacatePayGateway } from '@infrastructure/services/abacate-pay-gateway'
 import { SupabaseAuditService } from '@infrastructure/services/supabase-audit-service';
 import { SupabasePaymentRepository, SupabaseTransactionRepository } from '@infrastructure/repositories';
 import { getSupabaseServiceClient } from '@infrastructure/database/supabase-client';
+import { inngest } from '@/inngest';
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,10 +16,17 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = getSupabaseServiceClient();
+    const paymentGateway = new AbacatePayGateway();
+    
+    const isValid = paymentGateway.verifyWebhookSignature(payload, signature);
+    if (!isValid) {
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
+    }
+
+    const event = paymentGateway.parseWebhookEvent(payload);
     
     const paymentRepo = new SupabasePaymentRepository(supabase);
     const transactionRepo = new SupabaseTransactionRepository(supabase);
-    const paymentGateway = new AbacatePayGateway();
     const auditService = new SupabaseAuditService();
 
     const useCase = new ProcessPaymentWebhookUseCase(
@@ -32,6 +40,19 @@ export async function POST(req: NextRequest) {
       payload,
       signature,
     });
+
+    if (event.type === 'billing.paid') {
+      const payment = await paymentRepo.findById(event.metadata.paymentId);
+      if (payment) {
+        await inngest.send({
+          name: 'diagnosis/generate-requested',
+          data: {
+            userId: payment.userId,
+            transactionId: payment.transactionId,
+          },
+        });
+      }
+    }
 
     return NextResponse.json({ received: true });
   } catch (error: any) {

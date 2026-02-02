@@ -141,6 +141,7 @@ export class GenerateAIDiagnosisUseCase {
           risks: aiResult.risks,
           pathways: aiResult.pathways,
           summary: aiResult.summary,
+          aiConfidence: aiResult.confidence,
         });
 
         await this.diagnosisRepository.updateStatus(diagnosis.id, 'AI_GENERATED');
