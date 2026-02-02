@@ -76,6 +76,7 @@ export const transactionTypes = [
     subtitle: 'Resolução de pendências',
     gradient: 'from-amber-500 to-orange-500',
     icon: Icons.Regularization,
+    slug: 'regularizacao',
   },
   {
     id: 'PURCHASE',
@@ -83,6 +84,7 @@ export const transactionTypes = [
     subtitle: 'Segurança na aquisição',
     gradient: 'from-orange-500 to-red-500',
     icon: Icons.Purchase,
+    slug: 'compra',
   },
   {
     id: 'RENTAL',
@@ -90,6 +92,7 @@ export const transactionTypes = [
     subtitle: 'Risco de inquilinato',
     gradient: 'from-purple-500 to-pink-500',
     icon: Icons.Rental,
+    slug: 'aluguel',
   },
   {
     id: 'DONATION',
@@ -97,6 +100,7 @@ export const transactionTypes = [
     subtitle: 'Transferência gratuita',
     gradient: 'from-pink-500 to-rose-500',
     icon: Icons.Donation,
+    slug: 'doacao',
   },
   {
     id: 'EXCHANGE',
@@ -104,6 +108,7 @@ export const transactionTypes = [
     subtitle: 'Troca de imóveis',
     gradient: 'from-cyan-500 to-blue-500',
     icon: Icons.Exchange,
+    slug: 'permuta',
   },
   {
     id: 'BUILT_TO_SUIT',
@@ -111,6 +116,7 @@ export const transactionTypes = [
     subtitle: 'Locação sob medida',
     gradient: 'from-indigo-500 to-purple-500',
     icon: Icons.BuiltToSuit,
+    slug: 'built-to-suit',
   },
   {
     id: 'SURFACE_RIGHT',
@@ -118,6 +124,7 @@ export const transactionTypes = [
     subtitle: 'Uso do solo',
     gradient: 'from-teal-500 to-emerald-500',
     icon: Icons.SurfaceRight,
+    slug: 'direito-superficie',
   },
   {
     id: 'RURAL_LEASE',
@@ -125,6 +132,7 @@ export const transactionTypes = [
     subtitle: 'Contratos agrários',
     gradient: 'from-green-500 to-lime-500',
     icon: Icons.RuralLease,
+    slug: 'arrendamento-rural',
   },
   {
     id: 'GUARANTEES',
@@ -132,6 +140,7 @@ export const transactionTypes = [
     subtitle: 'Hipoteca e penhor',
     gradient: 'from-blue-600 to-indigo-600',
     icon: Icons.Guarantees,
+    slug: 'garantias',
   },
   {
     id: 'FIDUCIARY',
@@ -139,6 +148,7 @@ export const transactionTypes = [
     subtitle: 'Garantia de imóvel',
     gradient: 'from-slate-600 to-gray-600',
     icon: Icons.FiduciaryAlienation,
+    slug: 'alienacao-fiduciaria',
   },
   {
     id: 'CAPITAL',
@@ -146,5 +156,26 @@ export const transactionTypes = [
     subtitle: 'Aporte em empresa',
     gradient: 'from-emerald-600 to-green-600',
     icon: Icons.CapitalIntegration,
+    slug: 'integralizacao-capital',
   },
 ];
+
+export const getSlugFromId = (id: string) => {
+  const type = transactionTypes.find((t) => t.id === id);
+  return type?.slug || id;
+};
+
+export const getIdFromSlug = (slug: string) => {
+  // Try exact match first
+  const typeBySlug = transactionTypes.find((t) => t.slug === slug);
+  if (typeBySlug) return typeBySlug.id;
+
+  // Create mapping for English ID fallback (old links support)
+  const typeById = transactionTypes.find((t) => t.id === slug);
+  if (typeById) return typeById.id;
+
+  // Partial matches or fallbacks could be added here if needed
+  // Default to PURCHASE if nothing found, or return null to let caller handle
+  // Returning the input slug as fallback if it looks like an ID, but best to stick to known types
+  return 'PURCHASE';
+};

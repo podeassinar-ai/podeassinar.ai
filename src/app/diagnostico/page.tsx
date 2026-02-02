@@ -21,6 +21,7 @@ import { initiatePaymentAction } from '../actions/payment-actions';
 import { saveDocumentRecordAction } from '../actions/document-actions';
 import { createClient } from '@supabase/supabase-js';
 import { mapGenericError } from '@/utils/error-mapping';
+import { getIdFromSlug } from '@/ui/constants/transactions';
 
 // Init client-side supabase for storage upload
 const supabase = createClient(
@@ -55,9 +56,14 @@ interface FormData {
   additionalInfo: string;
 }
 
+
+
+// ... imports remain the same
+
 function DiagnosticoContent() {
   const searchParams = useSearchParams();
-  const tipo = searchParams.get('tipo') || 'PURCHASE';
+  const tipoSlug = searchParams.get('tipo');
+  const tipo = getIdFromSlug(tipoSlug || 'compra'); // Default to compra/PURCHASE if empty
   const { addToast } = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
 

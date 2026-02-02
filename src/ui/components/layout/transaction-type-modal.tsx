@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { Modal } from '../common/modal';
-import { transactionTypes } from '../../constants/transactions';
+import { transactionTypes, getSlugFromId } from '../../constants/transactions';
 
 interface TransactionTypeModalProps {
   isOpen: boolean;
@@ -13,7 +13,8 @@ export function TransactionTypeModal({ isOpen, onClose }: TransactionTypeModalPr
   const router = useRouter();
 
   const handleSelect = (typeId: string) => {
-    router.push(`/diagnostico?tipo=${typeId}`);
+    const slug = getSlugFromId(typeId);
+    router.push(`/diagnostico?tipo=${slug}`);
     onClose();
   };
 
@@ -31,7 +32,7 @@ export function TransactionTypeModal({ isOpen, onClose }: TransactionTypeModalPr
             </div>
             <h3 className="font-bold text-text-primary text-sm mb-1 leading-tight">{type.title}</h3>
             <p className="text-xs text-text-muted font-mono">{type.subtitle}</p>
-            
+
             {/* Tech decoration */}
             <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-gray-200 group-hover:bg-green-400 transition-colors"></div>
           </button>
