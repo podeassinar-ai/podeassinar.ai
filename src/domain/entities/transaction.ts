@@ -1,12 +1,20 @@
-export type TransactionType = 
+export type TransactionType =
   | 'SALE'
   | 'PURCHASE'
   | 'RENTAL'
   | 'FINANCING'
   | 'REFINANCING'
-  | 'REGULARIZATION';
+  | 'REGULARIZATION'
+  | 'DONATION'
+  | 'EXCHANGE'
+  | 'BUILT_TO_SUIT'
+  | 'SURFACE_RIGHT'
+  | 'RURAL_LEASE'
+  | 'GUARANTEES'
+  | 'FIDUCIARY'
+  | 'CAPITAL';
 
-export type TransactionStatus = 
+export type TransactionStatus =
   | 'PENDING_QUESTIONNAIRE'
   | 'PENDING_DOCUMENTS'
   | 'PENDING_PAYMENT'
@@ -24,6 +32,11 @@ export interface Transaction {
   propertyAddress?: string;
   registryNumber?: string;
   registryOffice?: string;
+  propertyType?: string;
+  propertyValue?: string;
+  hasMatricula?: string;
+  matriculaOption?: string;
+  additionalInfo?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -35,6 +48,11 @@ export function createTransaction(params: {
   propertyAddress?: string;
   registryNumber?: string;
   registryOffice?: string;
+  propertyType?: string;
+  propertyValue?: string;
+  hasMatricula?: string;
+  matriculaOption?: string;
+  additionalInfo?: string;
 }): Transaction {
   const now = new Date();
   return {
@@ -45,6 +63,11 @@ export function createTransaction(params: {
     propertyAddress: params.propertyAddress,
     registryNumber: params.registryNumber,
     registryOffice: params.registryOffice,
+    propertyType: params.propertyType,
+    propertyValue: params.propertyValue,
+    hasMatricula: params.hasMatricula,
+    matriculaOption: params.matriculaOption,
+    additionalInfo: params.additionalInfo,
     createdAt: now,
     updatedAt: now,
   };

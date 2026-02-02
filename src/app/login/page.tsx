@@ -3,20 +3,20 @@
 import { Suspense, useState } from 'react';
 import Image from 'next/image';
 import { createBrowserClient } from '@supabase/ssr';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { Button, Input, Card, Alert, useToast } from '@ui/components/common';
 import { mapAuthError } from '@/utils/error-mapping';
+import { loginAction, signupAction } from '../actions/auth-actions';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createBrowserClient(supabaseUrl, supabaseKey);
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirect_to') || '/';
   const { addToast } = useToast();
-  
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -48,31 +48,25 @@ function LoginForm() {
 
     try {
       if (mode === 'signup') {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              name: email.split('@')[0],
-            },
-          },
-        });
-        if (error) throw error;
-        addToast('Conta criada! Verifique seu email ou faça login.', 'success');
+        const result = await signupAction(email, password);
+        if (result.error) {
+          throw new Error(result.error);
+        }
+        addToast(result.message || 'Conta criada! Verifique seu email ou faça login.', 'success');
         setMode('login');
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
-        
-        // Force refresh to update server components with new cookies
-        router.refresh();
-        router.push(redirectTo);
+        // Server action handles redirect on success
+        const result = await loginAction(email, password, redirectTo);
+        if (result?.error) {
+          throw new Error(result.error);
+        }
+        // If we get here without redirect, something went wrong
       }
     } catch (err: any) {
-      setError(mapAuthError(err.message || ''));
+      // Don't show error for redirect (NEXT_REDIRECT)
+      if (err.message !== 'NEXT_REDIRECT') {
+        setError(mapAuthError(err.message || ''));
+      }
     } finally {
       setLoading(false);
     }
@@ -82,13 +76,13 @@ function LoginForm() {
     <Card className="w-full max-w-md relative z-10">
       <div className="text-center mb-8">
         <div className="relative w-60 h-60 mx-auto -mb-10">
-           <Image 
-             src="/logo.png" 
-             alt="PodeAssinar Logo" 
-             fill
-             className="object-contain"
-             priority
-           />
+          <Image
+            src="/logo.png"
+            alt="PodeAssinar Logo"
+            fill
+            className="object-contain"
+            priority
+          />
         </div>
         <h1 className="text-2xl font-bold text-text-primary">
           {mode === 'login' ? 'Bem-vindo de volta' : 'Criar Conta'}

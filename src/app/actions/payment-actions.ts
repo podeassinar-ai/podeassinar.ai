@@ -4,18 +4,18 @@ import { InitiatePaymentUseCase } from '@application/use-cases/initiate-payment'
 import { SyncPaymentStatusUseCase } from '@application/use-cases/sync-payment-status';
 import { AbacatePayGateway } from '@infrastructure/services/abacate-pay-gateway';
 import { SupabaseAuditService } from '@infrastructure/services/supabase-audit-service';
-import { 
-  SupabaseTransactionRepository, 
-  SupabasePaymentRepository, 
-  SupabaseUserRepository 
+import {
+  SupabaseTransactionRepository,
+  SupabasePaymentRepository,
+  SupabaseUserRepository
 } from '@infrastructure/repositories';
-import { getSupabaseClient } from '@infrastructure/database/supabase-client';
+import { createClient } from '@infrastructure/database/supabase-server';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 
 export async function initiatePaymentAction(transactionId: string) {
-  const supabase = getSupabaseClient();
-  
+  const supabase = await createClient();
+
   // Get current user
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -55,8 +55,8 @@ export async function initiatePaymentAction(transactionId: string) {
 }
 
 export async function syncPaymentStatusAction(paymentId: string) {
-  const supabase = getSupabaseClient();
-  
+  const supabase = await createClient();
+
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     throw new Error('User not authenticated');
@@ -81,7 +81,7 @@ export async function syncPaymentStatusAction(paymentId: string) {
     });
 
     revalidatePath('/meus-diagnosticos');
-    
+
     return result;
   } catch (error: any) {
     console.error('Payment sync failed:', error);
@@ -90,8 +90,8 @@ export async function syncPaymentStatusAction(paymentId: string) {
 }
 
 export async function syncPaymentByTransactionAction(transactionId: string) {
-  const supabase = getSupabaseClient();
-  
+  const supabase = await createClient();
+
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     throw new Error('User not authenticated');
@@ -103,7 +103,7 @@ export async function syncPaymentByTransactionAction(transactionId: string) {
   const auditService = new SupabaseAuditService();
 
   const payments = await paymentRepo.findByTransactionId(transactionId);
-  const pendingPayment = payments.find(p => 
+  const pendingPayment = payments.find(p =>
     p.status === 'PENDING' || p.status === 'PROCESSING'
   );
 
@@ -125,7 +125,7 @@ export async function syncPaymentByTransactionAction(transactionId: string) {
     });
 
     revalidatePath('/meus-diagnosticos');
-    
+
     return result;
   } catch (error: any) {
     console.error('Payment sync failed:', error);

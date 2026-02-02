@@ -1,6 +1,6 @@
 'use server';
 
-import { getSupabaseClient } from '@infrastructure/database/supabase-client';
+import { createClient } from '@infrastructure/database/supabase-server';
 import { SupabaseDocumentRepository } from '@infrastructure/repositories';
 import { createDocument } from '@domain/entities/document';
 import { v4 as uuidv4 } from 'uuid';
@@ -11,7 +11,7 @@ export async function saveDocumentRecordAction(transactionId: string, fileData: 
   type: string;
   path: string;
 }) {
-  const supabase = getSupabaseClient();
+  const supabase = await createClient();
   const repo = new SupabaseDocumentRepository(supabase);
 
   const document = createDocument({
@@ -30,8 +30,8 @@ export async function saveDocumentRecordAction(transactionId: string, fileData: 
 }
 
 export async function getUserDocumentsAction() {
-  const supabase = getSupabaseClient();
-  
+  const supabase = await createClient();
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
