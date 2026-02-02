@@ -91,18 +91,21 @@ export function Topbar() {
     <>
       <header className="hidden md:flex fixed top-0 left-0 right-0 h-16 bg-white border-b border-border z-50 px-4 lg:px-8 items-center justify-between">
         {/* Logo Section */}
-        <Link href="/" className="flex items-center gap-3 group min-w-fit">
-          <div className="relative w-8 h-8">
-             <Image 
-               src="/logo.png" 
-               alt="PodeAssinar Logo" 
-               fill
-               className="object-contain"
-             />
+        <Link href="/" className="flex items-center gap-4 group min-w-fit">
+          {/* Container pequeno para o layout, mas logo grande transbordando */}
+          <div className="relative w-10 h-10 flex-shrink-0">
+             <div className="absolute w-24 h-24 -top-7 -left-7">
+                <Image 
+                  src="/logo.png" 
+                  alt="PodeAssinar Logo" 
+                  fill
+                  className="object-contain"
+                />
+             </div>
           </div>
           <div className="flex flex-col justify-center">
-            <span className="block font-bold text-lg text-text-primary tracking-tight leading-none group-hover:text-primary transition-colors">PodeAssinar</span>
-            <span className="text-[9px] text-text-muted font-bold uppercase tracking-widest font-mono">AI ENGINE</span>
+            <span className="block font-bold text-lg text-text-primary tracking-tight leading-tight group-hover:text-primary transition-colors">PodeAssinar</span>
+            <span className="text-[9px] text-text-muted font-bold uppercase tracking-widest font-mono mt-0.5">AI ENGINE</span>
           </div>
         </Link>
 

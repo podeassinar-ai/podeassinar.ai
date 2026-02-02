@@ -307,14 +307,7 @@ export default async function HomePage() {
 
                     {/* Overlay UI Elements */}
                     <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
-                         <div className="bg-black/40 backdrop-blur-md text-white text-[10px] font-mono px-2 py-1 rounded border border-white/10">
-                            SCANNING_MODE: ACTIVE
-                         </div>
-                         <div className="flex gap-1">
-                            <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></div>
-                            <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse delay-75"></div>
-                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse delay-150"></div>
-                         </div>
+                         {/* Empty for balance or future use */}
                     </div>
                  </div>
               </div>
