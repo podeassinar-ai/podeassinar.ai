@@ -1,4 +1,4 @@
-import { Sidebar } from '@ui/components/layout/sidebar';
+import { Topbar } from '@ui/components/layout/topbar';
 import { MainContainer } from '@ui/components/layout/main-container';
 import Link from 'next/link';
 import { createServerClient } from '@supabase/ssr';
@@ -175,7 +175,7 @@ export default async function HomePage() {
 
   return (
     <>
-      <Sidebar />
+      <Topbar />
       <MainContainer>
         {/* Hero Section */}
         <div className="relative mb-20 py-8 md:py-16">

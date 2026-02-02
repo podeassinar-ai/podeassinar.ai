@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Sidebar } from '@ui/components/layout/sidebar';
+import { Topbar } from '@ui/components/layout/topbar';
 import { MainContainer } from '@ui/components/layout/main-container';
 import { TransactionTypeModal } from '@ui/components/layout/transaction-type-modal';
 import {
@@ -481,7 +481,7 @@ function DiagnosticoLoading() {
 export default function DiagnosticoPage() {
   return (
     <>
-      <Sidebar />
+      <Topbar />
       <Suspense fallback={<DiagnosticoLoading />}>
         <DiagnosticoContent />
       </Suspense>

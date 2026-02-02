@@ -1,4 +1,4 @@
-import { Sidebar } from '@ui/components/layout/sidebar';
+import { Topbar } from '@ui/components/layout/topbar';
 import { MainContainer } from '@ui/components/layout/main-container';
 import { Button, SyncPaymentButton } from '@ui/components/common';
 import { TechBadge } from '@ui/components/common/tech-badge';
@@ -60,7 +60,7 @@ export default async function MeusDiagnosticosPage() {
 
   return (
     <>
-      <Sidebar />
+      <Topbar />
       <MainContainer
         title="Minhas Análises"
         subtitle="Histórico de Due Diligence e relatórios gerados"

@@ -10,7 +10,7 @@ interface MainContainerProps {
 export function MainContainer({ children, title, subtitle, action }: MainContainerProps) {
   return (
     <>
-      <main className="w-full md:pl-64 min-h-screen bg-white pb-24 md:pb-12 transition-all duration-300">
+      <main className="w-full min-h-screen bg-white pb-24 md:pb-12 md:pt-16 transition-all duration-300">
         <div className="max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-12 animate-fade-in">
           {(title || subtitle) && (
             <header className="mb-8 md:mb-12 flex flex-col md:flex-row md:justify-between md:items-start gap-4">

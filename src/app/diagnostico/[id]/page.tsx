@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
-import { Sidebar } from '@ui/components/layout/sidebar';
+import { Topbar } from '@ui/components/layout/topbar';
 import { MainContainer } from '@ui/components/layout/main-container';
 import { Card, Button } from '@ui/components/common';
 import { useParams, useRouter } from 'next/navigation';
@@ -266,7 +266,7 @@ function ReportLoading() {
 export default function DiagnosisReportPage() {
   return (
     <>
-      <Sidebar />
+      <Topbar />
       <Suspense fallback={<ReportLoading />}>
         <ReportContent />
       </Suspense>

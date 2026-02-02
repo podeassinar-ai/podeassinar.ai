@@ -52,7 +52,7 @@ const navItems: NavItem[] = [
   },
 ];
 
-export function Sidebar() {
+export function Topbar() {
   const pathname = usePathname();
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -73,7 +73,6 @@ export function Sidebar() {
   }, []);
 
   const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário';
-  const userEmail = user?.email || '';
   const userInitials = userName.slice(0, 2).toUpperCase();
 
   const handleNavClick = (e: React.MouseEvent, href: string) => {
@@ -90,28 +89,25 @@ export function Sidebar() {
 
   return (
     <>
-      <aside className="hidden md:flex fixed left-0 top-0 h-screen w-64 bg-white border-r border-border flex-col shadow-lg z-50">
-        <div className="p-8">
-          <Link href="/" className="flex items-center gap-4 group">
-            {/* Container pequeno para o layout, mas logo grande transbordando */}
-            <div className="relative w-12 h-12 flex-shrink-0">
-               <div className="absolute w-32 h-32 -top-10 -left-10">
-                  <Image 
-                    src="/logo.png" 
-                    alt="PodeAssinar Logo" 
-                    fill
-                    className="object-contain"
-                  />
-               </div>
-            </div>
-            <div className="flex flex-col justify-center">
-              <span className="block font-bold text-xl text-text-primary tracking-tight leading-tight group-hover:text-primary transition-colors">PodeAssinar</span>
-              <span className="text-[10px] text-text-muted font-bold uppercase tracking-widest font-mono mt-0.5">AI ENGINE</span>
-            </div>
-          </Link>
-        </div>
+      <header className="hidden md:flex fixed top-0 left-0 right-0 h-16 bg-white border-b border-border z-50 px-4 lg:px-8 items-center justify-between">
+        {/* Logo Section */}
+        <Link href="/" className="flex items-center gap-3 group min-w-fit">
+          <div className="relative w-8 h-8">
+             <Image 
+               src="/logo.png" 
+               alt="PodeAssinar Logo" 
+               fill
+               className="object-contain"
+             />
+          </div>
+          <div className="flex flex-col justify-center">
+            <span className="block font-bold text-lg text-text-primary tracking-tight leading-none group-hover:text-primary transition-colors">PodeAssinar</span>
+            <span className="text-[9px] text-text-muted font-bold uppercase tracking-widest font-mono">AI ENGINE</span>
+          </div>
+        </Link>
 
-        <nav className="flex-1 px-4 py-4 space-y-2">
+        {/* Navigation Section */}
+        <nav className="flex items-center gap-1 mx-4">
           {navItems
             .filter((item) => !item.protected || user)
             .map((item) => {
@@ -121,38 +117,37 @@ export function Sidebar() {
                   key={item.href}
                   href={item.href}
                   onClick={(e) => handleNavClick(e, item.href)}
-                  className={isActive ? 'sidebar-link-active' : 'sidebar-link'}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm font-medium ${
+                    isActive 
+                      ? 'bg-orange-50 text-primary' 
+                      : 'text-text-secondary hover:bg-gray-50 hover:text-text-primary'
+                  }`}
                 >
                   {item.icon}
-                  <span className="text-sm">{item.label}</span>
+                  <span>{item.label}</span>
                 </Link>
               );
             })}
         </nav>
 
-        <div className="p-6 border-t border-border">
+        {/* User Section */}
+        <div className="flex items-center gap-4 min-w-fit justify-end">
           {loading ? (
-            <div className="flex items-center gap-3 w-full px-3 py-3">
-              <div className="w-9 h-9 bg-gray-200 rounded-lg animate-pulse" />
-              <div className="flex-1 space-y-2">
-                <div className="h-3 w-20 bg-gray-200 rounded animate-pulse" />
-                <div className="h-2 w-28 bg-gray-200 rounded animate-pulse" />
-              </div>
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-24 bg-gray-200 rounded animate-pulse" />
+              <div className="w-8 h-8 bg-gray-200 rounded-lg animate-pulse" />
             </div>
           ) : user ? (
-            <div className="flex items-center justify-between px-3 py-3 rounded-xl bg-gray-50 border border-border/50 hover:bg-orange-50/50 hover:border-primary/20 transition-all">
-              <div className="flex items-center gap-3 overflow-hidden">
-                <div className="w-9 h-9 flex-shrink-0 bg-white rounded-lg flex items-center justify-center text-primary font-bold shadow-sm border border-border font-mono">
-                  {userInitials}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-text-primary truncate font-mono">{userName}</p>
-                  <p className="text-xs text-text-muted truncate font-mono">{userEmail}</p>
-                </div>
+            <div className="flex items-center gap-3 pl-4 border-l border-border">
+              <div className="hidden lg:block text-right">
+                <p className="text-sm font-bold text-text-primary truncate font-mono">{userName}</p>
+              </div>
+              <div className="w-8 h-8 bg-primary/10 text-primary rounded-lg flex items-center justify-center font-bold font-mono text-sm border border-primary/20">
+                {userInitials}
               </div>
               <button 
                 onClick={handleLogout}
-                className="text-text-muted hover:text-red-500 transition-colors p-1"
+                className="text-text-muted hover:text-red-500 transition-colors p-1.5 hover:bg-red-50 rounded-lg"
                 title="Sair"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -163,16 +158,16 @@ export function Sidebar() {
           ) : (
             <Link
               href="/login"
-              className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-all shadow-sm"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white font-bold hover:bg-primary-hover transition-all shadow-sm text-sm"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
               </svg>
               Entrar
             </Link>
           )}
         </div>
-      </aside>
+      </header>
 
       <TransactionTypeModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </>

@@ -1,4 +1,4 @@
-import { Sidebar } from '@ui/components/layout/sidebar';
+import { Topbar } from '@ui/components/layout/topbar';
 import { MainContainer } from '@ui/components/layout/main-container';
 import { Alert } from '@ui/components/common';
 import { getUserDocumentsAction } from '../actions/document-actions';
@@ -25,7 +25,7 @@ export default async function DocumentosPage() {
 
   return (
     <>
-      <Sidebar />
+      <Topbar />
       <MainContainer
         title="Documentos"
         subtitle="Central de documentos e arquivos enviados"
