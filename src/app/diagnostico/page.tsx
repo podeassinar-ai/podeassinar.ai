@@ -60,7 +60,7 @@ function DiagnosticoContent() {
   const tipo = searchParams.get('tipo') || 'PURCHASE';
   const { addToast } = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
+
   const [currentStep, setCurrentStep] = useState(0);
   const [transactionId, setTransactionId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -90,7 +90,7 @@ function DiagnosticoContent() {
     setLoading(true);
     try {
       const newUploadedFiles = [...uploadedFiles];
-      
+
       for (const file of files) {
         const filePath = `transactions/${transactionId}/${Date.now()}_${file.name}`;
         const { error: uploadError } = await supabase.storage
@@ -108,7 +108,7 @@ function DiagnosticoContent() {
 
         newUploadedFiles.push(file);
       }
-      
+
       setUploadedFiles(newUploadedFiles);
       addToast('Documentos enviados com sucesso!', 'success');
     } catch (err: any) {
@@ -151,7 +151,7 @@ function DiagnosticoContent() {
           await updateTransactionAction(transactionId, formData);
         }
       }
-      
+
       if (currentStep < STEPS.length - 1) {
         setCurrentStep((prev) => prev + 1);
       }
@@ -210,7 +210,7 @@ function DiagnosticoContent() {
                   value={formData.propertyAddress}
                   onChange={(e) => updateField('propertyAddress', e.target.value)}
                 />
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <Select
                     label="Tipo do imóvel"
@@ -273,23 +273,26 @@ function DiagnosticoContent() {
                     onChange={(e) => updateField('hasMatricula', e.target.value)}
                   />
 
-                  {formData.hasMatricula === 'antiga' && (
-                    <Alert variant="warning" title="Atenção: Validade da Certidão">
-                      Para garantia jurídica completa, cartórios exigem certidões com menos de 30 dias. 
-                      Analisaremos o documento enviado, mas recomendamos a atualização.
-                    </Alert>
-                  )}
-
-                  {formData.hasMatricula === 'nao' && (
+                  {(formData.hasMatricula === 'nao' || formData.hasMatricula === 'antiga') && (
                     <div className="pl-4 border-l-2 border-primary/20 space-y-4">
-                      <Alert variant="info" title="Serviço de Busca">
-                        Podemos solicitar a certidão atualizada diretamente no cartório para você.
-                      </Alert>
+                      {formData.hasMatricula === 'antiga' && (
+                        <Alert variant="warning" title="Atenção: Validade da Certidão">
+                          Para garantia jurídica completa, cartórios exigem certidões com menos de 30 dias.
+                          Analisaremos o documento enviado, mas recomendamos a atualização.
+                        </Alert>
+                      )}
+
+                      {formData.hasMatricula === 'nao' && (
+                        <Alert variant="info" title="Serviço de Busca">
+                          Podemos solicitar a certidão atualizada diretamente no cartório para você.
+                        </Alert>
+                      )}
+
                       <Select
                         label="Como deseja prosseguir?"
                         options={[
                           { value: 'solicitar', label: 'Solicitar emissão pelo PodeAssinar (+ taxas cartorárias)' },
-                          { value: 'providenciar', label: 'Vou providenciar a certidão por conta própria' },
+                          { value: 'providenciar', label: formData.hasMatricula === 'antiga' ? 'Tenho uma antiga, mas irei providenciar a atualização por conta própria' : 'Vou providenciar a certidão por conta própria' },
                         ]}
                         placeholder="Selecione uma opção"
                         value={formData.matriculaOption}
@@ -355,8 +358,8 @@ function DiagnosticoContent() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
                             <div>
-                               <p className="text-sm font-medium text-text-primary truncate max-w-[200px] font-mono text-xs">{file.name}</p>
-                               <p className="text-[10px] text-text-muted font-mono">{(file.size / 1024).toFixed(1)} KB</p>
+                              <p className="text-sm font-medium text-text-primary truncate max-w-[200px] font-mono text-xs">{file.name}</p>
+                              <p className="text-[10px] text-text-muted font-mono">{(file.size / 1024).toFixed(1)} KB</p>
                             </div>
                           </div>
                           <button
@@ -379,61 +382,61 @@ function DiagnosticoContent() {
           {currentStep === 3 && (
             <div className="space-y-6">
               <Card className="bg-white">
-                 <div className="text-center mb-8">
-                    <div className="w-12 h-12 bg-secondary/10 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-                      <svg className="w-6 h-6 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <h3 className="text-xl font-bold text-text-primary">Confirmação da Análise</h3>
-                    <p className="text-text-secondary mt-1">Revise os valores da Due Diligence</p>
-                 </div>
+                <div className="text-center mb-8">
+                  <div className="w-12 h-12 bg-secondary/10 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+                    <svg className="w-6 h-6 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-text-primary">Confirmação da Análise</h3>
+                  <p className="text-text-secondary mt-1">Revise os valores da Due Diligence</p>
+                </div>
 
-                 <div className="bg-gray-50 rounded border border-border p-6 mb-6">
-                   <div className="space-y-4">
+                <div className="bg-gray-50 rounded border border-border p-6 mb-6">
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center pb-4 border-b border-gray-200">
+                      <div>
+                        <span className="block font-medium text-text-primary">Due Diligence Imobiliária</span>
+                        <span className="text-sm text-text-muted">Análise IA + Relatório + Validação</span>
+                      </div>
+                      <span className="font-semibold text-text-primary font-mono">R$ 300,00</span>
+                    </div>
+
+                    {formData.matriculaOption === 'solicitar' && (
                       <div className="flex justify-between items-center pb-4 border-b border-gray-200">
                         <div>
-                          <span className="block font-medium text-text-primary">Due Diligence Imobiliária</span>
-                          <span className="text-sm text-text-muted">Análise IA + Relatório + Validação</span>
+                          <span className="block font-medium text-text-primary">Serviço de Busca de Certidão</span>
+                          <span className="text-sm text-text-muted">Taxas cartorárias + Emissão digital</span>
                         </div>
-                        <span className="font-semibold text-text-primary font-mono">R$ 300,00</span>
+                        <span className="font-semibold text-text-primary font-mono">R$ 50,00</span>
                       </div>
-                      
-                      {formData.matriculaOption === 'solicitar' && (
-                        <div className="flex justify-between items-center pb-4 border-b border-gray-200">
-                          <div>
-                            <span className="block font-medium text-text-primary">Serviço de Busca de Certidão</span>
-                            <span className="text-sm text-text-muted">Taxas cartorárias + Emissão digital</span>
-                          </div>
-                          <span className="font-semibold text-text-primary font-mono">R$ 50,00</span>
-                        </div>
-                      )}
-                      
-                      <div className="flex justify-between items-center pt-2">
-                        <span className="font-bold text-lg text-primary">Total</span>
-                        <span className="font-bold text-2xl text-primary font-mono">
-                          R$ {formData.matriculaOption === 'solicitar' ? '350,00' : '300,00'}
-                        </span>
-                      </div>
-                   </div>
-                 </div>
+                    )}
 
-                 <Button 
-                   variant="primary" 
-                   size="lg" 
-                   className="w-full py-4 text-lg"
-                   onClick={handlePayment}
-                   loading={loading}
-                 >
-                   Ir para Pagamento (Seguro)
-                 </Button>
-                 
-                 <p className="text-center text-xs text-text-muted mt-4 flex items-center justify-center gap-2">
-                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                   </svg>
-                   Ambiente seguro. Dados criptografados.
-                 </p>
+                    <div className="flex justify-between items-center pt-2">
+                      <span className="font-bold text-lg text-primary">Total</span>
+                      <span className="font-bold text-2xl text-primary font-mono">
+                        R$ {formData.matriculaOption === 'solicitar' ? '350,00' : '300,00'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <Button
+                  variant="primary"
+                  size="lg"
+                  className="w-full py-4 text-lg"
+                  onClick={handlePayment}
+                  loading={loading}
+                >
+                  Ir para Pagamento (Seguro)
+                </Button>
+
+                <p className="text-center text-xs text-text-muted mt-4 flex items-center justify-center gap-2">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  Ambiente seguro. Dados criptografados.
+                </p>
               </Card>
             </div>
           )}
@@ -447,7 +450,7 @@ function DiagnosticoContent() {
             >
               ← Voltar
             </Button>
-            
+
             {currentStep < STEPS.length - 1 && (
               <Button
                 variant="primary"
@@ -461,7 +464,7 @@ function DiagnosticoContent() {
           </div>
         </div>
       </MainContainer>
-      
+
       <TransactionTypeModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </>
   );
