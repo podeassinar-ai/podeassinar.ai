@@ -1,4 +1,4 @@
-import { AdminNotification, NotificationType } from '@domain/entities/admin-notification';
+import { AdminNotification } from '@domain/entities/admin-notification';
 
 export interface INotificationRepository {
     create(notification: AdminNotification): Promise<AdminNotification>;

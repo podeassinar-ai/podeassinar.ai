@@ -169,7 +169,7 @@ export default function SubscriptionCheckoutPage() {
                         {/* Terms Notice */}
                         <div className="bg-gray-50 rounded-xl p-4 mb-8 text-sm text-text-secondary leading-relaxed">
                             <p>
-                                Ao clicar em "Pagar Agora", você será redirecionado para o checkout seguro da Stripe.
+                                Ao clicar em &quot;Pagar Agora&quot;, você será redirecionado para o checkout seguro da Stripe.
                                 Sua assinatura de {formatPlanPrice(plan)} será cobrada a cada {billingCycleLabel}.
                             </p>
                         </div>

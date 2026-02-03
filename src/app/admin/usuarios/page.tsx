@@ -34,7 +34,6 @@ const ASSIGNABLE_ROLES = [
 export default function UsersManagementPage() {
     const [users, setUsers] = useState<UserListItem[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedRole, setSelectedRole] = useState<string>('ALL');
 
@@ -50,7 +49,7 @@ export default function UsersManagementPage() {
             const data = await getAllUsers();
             setUsers(data);
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Erro ao carregar usuários');
+            console.error('Error loading users:', err);
         } finally {
             setLoading(false);
         }

@@ -93,7 +93,7 @@ export class AbacatePayGateway implements IPaymentGateway {
 
   parseWebhookEvent(payload: string): PaymentWebhookEvent {
     const data: AbacatePayWebhookPayload = JSON.parse(payload);
-    
+
     const eventTypeMap: Record<string, PaymentWebhookEventType> = {
       'billing.paid': 'billing.paid',
       'billing.expired': 'billing.expired',
@@ -113,12 +113,12 @@ export class AbacatePayGateway implements IPaymentGateway {
   }
 
   async refund(externalId: string): Promise<void> {
-    console.warn('Refund not implemented for v2 yet');
+    console.warn(`Refund not implemented for v2 yet (ID: ${externalId})`);
   }
 
   async getCheckout(id: string): Promise<CheckoutDetails> {
     const checkout = await this.client.checkouts.get(id);
-    
+
     const statusMap: Record<string, CheckoutStatus> = {
       'PENDING': 'PENDING',
       'EXPIRED': 'EXPIRED',
@@ -138,7 +138,7 @@ export class AbacatePayGateway implements IPaymentGateway {
 
   async listCheckouts(): Promise<CheckoutDetails[]> {
     const checkouts = await this.client.checkouts.list();
-    
+
     const statusMap: Record<string, CheckoutStatus> = {
       'PENDING': 'PENDING',
       'EXPIRED': 'EXPIRED',
@@ -158,7 +158,7 @@ export class AbacatePayGateway implements IPaymentGateway {
 
   async checkPixStatus(pixId: string): Promise<PixStatus> {
     const status = await this.client.pix.status(pixId);
-    
+
     const pixStatusMap: Record<string, 'PENDING' | 'PAID' | 'EXPIRED'> = {
       'PENDING': 'PENDING',
       'PAID': 'PAID',
@@ -180,7 +180,7 @@ export class AbacatePayGateway implements IPaymentGateway {
     }
 
     const result = await this.client.pix.simulate(pixId);
-    
+
     return {
       id: result.data.id,
       status: 'PAID',
@@ -191,7 +191,7 @@ export class AbacatePayGateway implements IPaymentGateway {
 
   async getStoreInfo(): Promise<StoreInfo> {
     const store = await this.client.store.get();
-    
+
     return {
       id: store.data.id,
       name: store.data.name,
@@ -201,7 +201,7 @@ export class AbacatePayGateway implements IPaymentGateway {
 
   async getRevenueMetrics(): Promise<RevenueMetrics> {
     const merchant = await this.client.mrr.merchant();
-    
+
     return {
       mrr: merchant.data.mrr || 0,
       totalRevenue: merchant.data.totalRevenue || 0,

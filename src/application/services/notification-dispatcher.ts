@@ -1,4 +1,3 @@
-import { v4 as uuidv4 } from 'uuid';
 import { INotificationRepository } from '@domain/interfaces/notification-repository';
 import { IEmailService } from '@domain/interfaces/email-service';
 import { IUserRepository } from '@domain/interfaces/user-repository';

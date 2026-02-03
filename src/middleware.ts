@@ -21,7 +21,7 @@ export async function middleware(request: NextRequest) {
   // 1. Rate Limiting for API
   if (pathname.startsWith('/api/')) {
     const clientIp = getClientIp(request);
-    
+
     let limiter = defaultRateLimiters.api;
     let limitKey = `api:${clientIp}`;
 
@@ -75,7 +75,7 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value));
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           response = NextResponse.next({
             request,
           });

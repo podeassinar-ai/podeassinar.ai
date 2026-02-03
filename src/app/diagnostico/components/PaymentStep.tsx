@@ -5,7 +5,7 @@ import { checkSubscriptionCreditsAction, consumeSubscriptionCreditAction } from 
 import { mapGenericError } from '@/utils/error-mapping';
 import { PaymentStepProps } from '../types';
 
-export function PaymentStep({ transactionId, matriculaOption, loading, setLoading, onPaymentClick, addToast }: PaymentStepProps) {
+export function PaymentStep({ transactionId, matriculaOption, loading, onPaymentClick, addToast }: PaymentStepProps) {
     const router = useRouter();
     const [creditInfo, setCreditInfo] = useState<{
         hasActiveSubscription: boolean;

@@ -27,7 +27,7 @@ export function SyncPaymentButton({ transactionId, status }: SyncPaymentButtonPr
         } else {
           setSyncResult('Nenhuma mudança detectada');
         }
-      } catch (error: any) {
+      } catch {
         setSyncResult('Erro ao sincronizar');
       }
     });
