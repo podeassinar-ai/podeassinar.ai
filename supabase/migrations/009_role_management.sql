@@ -1,9 +1,8 @@
--- Migration: Add new user roles (SYSTEM_ADMIN, COMPANY_ADMIN)
+-- Migration: Role Management RLS and Organization Support
 -- Created: 2026-02-02
 
--- Step 1: Add new role values to the users table
--- Note: PostgreSQL doesn't have native ENUMs in this setup, roles are TEXT
--- We just need to ensure the application layer validates these values
+-- Step 1: Organization Support
+-- Note: user_role ENUM was updated in migration 008_5
 
 -- Step 2: Add organization_id column for future B2B support
 ALTER TABLE users ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES users(id) ON DELETE SET NULL;
