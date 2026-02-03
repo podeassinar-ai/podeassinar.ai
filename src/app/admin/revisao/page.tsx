@@ -1,342 +1,152 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
-import { getPendingReviews, approveDiagnosis, PendingReviewItem } from '@app/actions/admin-actions';
-import { Button, Card } from '@ui/components/common';
-import { RiskItem, LegalPathway } from '@domain/entities/diagnosis';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { getPendingReviews, PendingReviewItem } from '@app/actions/admin-actions';
 
-const riskLevelColors: Record<string, string> = {
-  LOW: 'bg-blue-100 text-blue-800',
-  MEDIUM: 'bg-yellow-100 text-yellow-800',
-  HIGH: 'bg-orange-100 text-orange-800',
-  CRITICAL: 'bg-red-100 text-red-800',
-};
+function PriorityBadge({ score }: { score: number }) {
+  let color = 'bg-slate-100 text-slate-600 border-slate-200';
+  if (score > 80) color = 'bg-red-50 text-red-700 border-red-200';
+  else if (score > 50) color = 'bg-amber-50 text-amber-700 border-amber-200';
+  else if (score > 20) color = 'bg-blue-50 text-blue-700 border-blue-200';
 
-function getConfidenceBadge(confidence?: number) {
-  if (confidence === undefined) {
-    return { color: 'bg-gray-100 text-gray-600', label: 'N/A', priority: 2 };
-  }
-  if (confidence >= 0.8) {
-    return { color: 'bg-green-100 text-green-800', label: 'Alta', priority: 3 };
-  }
-  if (confidence >= 0.5) {
-    return { color: 'bg-yellow-100 text-yellow-800', label: 'Media', priority: 2 };
-  }
-  return { color: 'bg-red-100 text-red-800', label: 'Baixa', priority: 1 };
-}
-
-function hasCriticalRisks(risks: RiskItem[]): boolean {
-  return risks.some(r => r.level === 'CRITICAL');
-}
-
-function hasHighRisks(risks: RiskItem[]): boolean {
-  return risks.some(r => r.level === 'HIGH' || r.level === 'CRITICAL');
-}
-
-function getAttentionPoints(item: PendingReviewItem): string[] {
-  const points: string[] = [];
-  const confidence = item.diagnosis.aiConfidence;
-  
-  if (confidence !== undefined && confidence < 0.5) {
-    points.push('Baixa confianca da IA - revisar com atencao');
-  }
-  
-  const criticalRisks = item.diagnosis.risks.filter(r => r.level === 'CRITICAL');
-  if (criticalRisks.length > 0) {
-    points.push(`${criticalRisks.length} risco(s) critico(s) identificado(s)`);
-  }
-  
-  const highRisks = item.diagnosis.risks.filter(r => r.level === 'HIGH');
-  if (highRisks.length > 0) {
-    points.push(`${highRisks.length} risco(s) alto(s) identificado(s)`);
-  }
-  
-  if (!item.diagnosis.summary && !item.diagnosis.propertyStatus) {
-    points.push('Resumo ausente');
-  }
-  
-  return points;
+  return (
+    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${color}`}>
+      {score}
+    </span>
+  );
 }
 
 function calculatePriority(item: PendingReviewItem): number {
   let score = 0;
-  
-  if (hasCriticalRisks(item.diagnosis.risks)) score += 100;
-  if (hasHighRisks(item.diagnosis.risks)) score += 50;
-  
-  const confidence = item.diagnosis.aiConfidence;
-  if (confidence !== undefined) {
-    score += Math.round((1 - confidence) * 30);
-  } else {
-    score += 15;
-  }
-  
-  return score;
+  // Critical risks boost propriety
+  const risks = item.diagnosis.risks || [];
+  if (risks.some(r => r.level === 'CRITICAL')) score += 50;
+  if (risks.some(r => r.level === 'HIGH')) score += 30;
+
+  // Lower confidence boosts priority (needs attention)
+  const confidence = item.diagnosis.aiConfidence ?? 1;
+  score += Math.round((1 - confidence) * 20);
+
+  // Time decay could be added here (older = higher priority)
+
+  return Math.min(score, 100);
 }
 
 export default function ReviewQueuePage() {
   const [items, setItems] = useState<PendingReviewItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [approving, setApproving] = useState<string | null>(null);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-
-  const sortedItems = useMemo(() => {
-    return [...items].sort((a, b) => calculatePriority(b) - calculatePriority(a));
-  }, [items]);
-
-  const stats = useMemo(() => {
-    const needsAttention = items.filter(
-      item => (item.diagnosis.aiConfidence ?? 1) < 0.5 || hasCriticalRisks(item.diagnosis.risks)
-    ).length;
-    return { needsAttention, total: items.length };
-  }, [items]);
-
-  async function loadItems() {
-    try {
-      const data = await getPendingReviews();
-      setItems(data);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   useEffect(() => {
-    loadItems();
-  }, []);
-
-  async function handleApprove(diagnosisId: string) {
-    setApproving(diagnosisId);
-    try {
-      await approveDiagnosis(diagnosisId);
-      setItems(items.filter(item => item.diagnosis.id !== diagnosisId));
-    } catch (err: any) {
-      alert('Erro ao aprovar: ' + err.message);
-    } finally {
-      setApproving(null);
+    async function loadData() {
+      try {
+        const data = await getPendingReviews();
+        setItems(data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
     }
-  }
-
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(date);
-  };
+    loadData();
+  }, []);
 
   if (loading) {
     return (
-      <div className="animate-pulse space-y-4">
-        <div className="h-8 bg-gray-200 rounded w-64"></div>
-        {[...Array(3)].map((_, i) => (
-          <div key={i} className="h-48 bg-gray-200 rounded"></div>
-        ))}
+      <div className="space-y-4 animate-pulse">
+        <div className="h-10 bg-slate-200 rounded w-1/4"></div>
+        <div className="space-y-2">
+          {[1, 2, 3].map(i => <div key={i} className="h-16 bg-white border border-slate-200 rounded-xl"></div>)}
+        </div>
       </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-red-600">{error}</p>
-      </div>
-    );
+    )
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Fila de Revisao</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Diagnosticos gerados pela IA aguardando aprovacao humana
-          </p>
+          <h1 className="text-2xl font-bold text-slate-900">Fila de Revisão</h1>
+          <p className="text-slate-500 mt-1">Gerencie e aprove diagnósticos gerados pela IA</p>
         </div>
-        <div className="flex items-center gap-3">
-          {stats.needsAttention > 0 && (
-            <span className="bg-red-100 text-red-800 px-3 py-1.5 rounded-full text-sm font-medium">
-              {stats.needsAttention} requer atencao
-            </span>
-          )}
-          <span className="bg-yellow-100 text-yellow-800 px-4 py-2 rounded-full font-medium">
-            {stats.total} pendentes
-          </span>
+        <div className="text-right">
+          <span className="text-3xl font-bold text-orange-600 font-mono">{items.length}</span>
+          <span className="text-xs text-slate-500 block uppercase tracking-wider font-semibold">Pendentes</span>
         </div>
       </div>
 
-      {items.length === 0 ? (
-        <Card>
-          <div className="text-center py-12">
-            <svg
-              className="mx-auto h-12 w-12 text-gray-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">Nenhum item pendente</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              Todos os diagnosticos foram revisados.
-            </p>
-          </div>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {sortedItems.map((item) => {
-            const confidenceBadge = getConfidenceBadge(item.diagnosis.aiConfidence);
-            const attentionPoints = getAttentionPoints(item);
-            const needsAttention = attentionPoints.length > 0;
-
-            return (
-              <Card 
-                key={item.diagnosis.id} 
-                className={`overflow-hidden ${needsAttention ? 'ring-2 ring-orange-300' : ''}`}
-              >
-                <div className="p-6">
-                  {needsAttention && (
-                    <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                      <h4 className="text-sm font-semibold text-orange-800 mb-1">Pontos de Atencao</h4>
-                      <ul className="text-sm text-orange-700 space-y-1">
-                        {attentionPoints.map((point, idx) => (
-                          <li key={idx} className="flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
-                            {point}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="text-sm font-mono text-gray-500">
-                          #{item.diagnosis.id.slice(0, 8)}
-                        </span>
-                        <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
-                          {item.transaction.type}
-                        </span>
-                        <span className={`text-xs px-2 py-1 rounded font-medium ${confidenceBadge.color}`}>
-                          IA: {confidenceBadge.label}
-                          {item.diagnosis.aiConfidence !== undefined && (
-                            <span className="ml-1 opacity-75">
-                              ({Math.round(item.diagnosis.aiConfidence * 100)}%)
-                            </span>
-                          )}
-                        </span>
-                        {hasCriticalRisks(item.diagnosis.risks) && (
-                          <span className="text-xs bg-red-600 text-white px-2 py-1 rounded font-medium">
-                            CRITICO
-                          </span>
-                        )}
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="border-b border-slate-100 text-xs font-bold text-slate-500 uppercase tracking-wider bg-slate-50/50">
+              <th className="px-6 py-4">Transação ID</th>
+              <th className="px-6 py-4">Cliente / Imóvel</th>
+              <th className="px-6 py-4 w-48">Confiança IA</th>
+              <th className="px-6 py-4">Status</th>
+              <th className="px-6 py-4">Prioridade</th>
+              <th className="px-6 py-4"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {items.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
+                  Nenhum item pendente para revisão.
+                </td>
+              </tr>
+            ) : items.map((item) => {
+              const priority = calculatePriority(item);
+              return (
+                <tr key={item.diagnosis.id} className="group hover:bg-slate-50 transition-colors">
+                  <td className="px-6 py-4">
+                    <span className="font-mono text-sm text-slate-600 font-medium">#{item.transaction.id.slice(0, 8)}</span>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {new Date(item.transaction.createdAt).toLocaleDateString()}
+                    </p>
+                  </td>
+                  <td className="px-6 py-4">
+                    <p className="text-sm font-semibold text-slate-900">{item.userName}</p>
+                    <p className="text-xs text-slate-500 truncate max-w-[200px]" title={item.transaction.propertyAddress}>
+                      {item.transaction.propertyAddress || 'Endereço não informado'}
+                    </p>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 h-2 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                        <div
+                          className={`h-full rounded-full ${(item.diagnosis.aiConfidence || 0) > 0.8 ? 'bg-emerald-500' :
+                              (item.diagnosis.aiConfidence || 0) > 0.6 ? 'bg-amber-500' : 'bg-red-500'
+                            }`}
+                          style={{ width: `${(item.diagnosis.aiConfidence || 0) * 100}%` }}
+                        ></div>
                       </div>
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {item.transaction.propertyAddress || 'Endereco nao informado'}
-                      </h3>
-                      <p className="text-sm text-gray-500 mt-1">
-                        Cliente: {item.userName} ({item.userEmail})
-                      </p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        Gerado em: {formatDate(item.diagnosis.aiGeneratedAt ?? item.diagnosis.updatedAt)}
-                      </p>
+                      <span className="text-xs font-mono font-bold text-slate-600 min-w-[3ch]">
+                        {Math.round((item.diagnosis.aiConfidence || 0) * 100)}%
+                      </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => setExpandedId(expandedId === item.diagnosis.id ? null : item.diagnosis.id)}
-                      >
-                        {expandedId === item.diagnosis.id ? 'Ocultar' : 'Ver Detalhes'}
-                      </Button>
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => handleApprove(item.diagnosis.id)}
-                        disabled={approving === item.diagnosis.id}
-                      >
-                        {approving === item.diagnosis.id ? 'Aprovando...' : 'Aprovar'}
-                      </Button>
-                    </div>
-                  </div>
-
-                  {expandedId === item.diagnosis.id && (
-                    <div className="mt-6 pt-6 border-t border-gray-100">
-                      <div className="mb-4">
-                        <h4 className="text-sm font-semibold text-gray-700 mb-2">Resumo</h4>
-                        <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                          {item.diagnosis.summary || item.diagnosis.propertyStatus || 'Sem resumo disponivel'}
-                        </p>
-                      </div>
-
-                      <div className="mb-4">
-                        <h4 className="text-sm font-semibold text-gray-700 mb-2">
-                          Riscos Identificados ({item.diagnosis.risks.length})
-                        </h4>
-                        <div className="space-y-2">
-                          {item.diagnosis.risks
-                            .sort((a, b) => {
-                              const order = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
-                              return order[a.level] - order[b.level];
-                            })
-                            .map((risk: RiskItem, idx: number) => (
-                              <div key={risk.id || idx} className="bg-gray-50 p-3 rounded text-sm">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${riskLevelColors[risk.level]}`}>
-                                    {risk.level}
-                                  </span>
-                                  <span className="text-gray-500">{risk.category}</span>
-                                </div>
-                                <p className="text-gray-700">{risk.description}</p>
-                                <p className="text-gray-500 mt-1 text-xs">
-                                  Recomendacao: {risk.recommendation}
-                                </p>
-                              </div>
-                            ))}
-                          {item.diagnosis.risks.length === 0 && (
-                            <p className="text-gray-500 text-sm">Nenhum risco identificado</p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div>
-                        <h4 className="text-sm font-semibold text-gray-700 mb-2">
-                          Caminhos Sugeridos ({item.diagnosis.pathways.length})
-                        </h4>
-                        <div className="space-y-2">
-                          {item.diagnosis.pathways.map((pathway: LegalPathway, idx: number) => (
-                            <div key={pathway.id || idx} className="bg-gray-50 p-3 rounded text-sm">
-                              <p className="font-medium text-gray-900">{pathway.title}</p>
-                              <p className="text-gray-600 mt-1">{pathway.description}</p>
-                              <p className="text-xs text-gray-500 mt-1">
-                                Duracao: {pathway.estimatedDuration} | 
-                                Custo: R$ {pathway.estimatedCost?.min?.toLocaleString('pt-BR')} - R$ {pathway.estimatedCost?.max?.toLocaleString('pt-BR')}
-                              </p>
-                            </div>
-                          ))}
-                          {item.diagnosis.pathways.length === 0 && (
-                            <p className="text-gray-500 text-sm">Nenhum caminho sugerido</p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                      Aguardando
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <PriorityBadge score={priority} />
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <Link
+                      href={`/admin/revisao/${item.diagnosis.id}`}
+                      className="inline-flex items-center px-4 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-orange-600 rounded-lg transition-all shadow-sm hover:shadow-md"
+                    >
+                      Revisar
+                    </Link>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

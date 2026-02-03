@@ -7,10 +7,12 @@ import {
   SupabaseDiagnosisRepository,
   SupabaseFulfillmentRepository,
   SupabaseUserRepository,
+  SupabaseDocumentRepository,
 } from '@infrastructure/repositories';
-import { LegalDiagnosis } from '@domain/entities/diagnosis';
+import { LegalDiagnosis, RiskItem, LegalPathway } from '@domain/entities/diagnosis';
 import { Transaction } from '@domain/entities/transaction';
 import { FulfillmentRequest } from '@domain/entities/fulfillment-request';
+import { Document } from '@domain/entities/document';
 
 async function verifyAdminAccess() {
   const supabase = await createClient();
@@ -291,3 +293,166 @@ export async function deactivateUser(userId: string): Promise<void> {
   const userRepo = new SupabaseUserRepository(supabase);
   await userRepo.deactivate(userId);
 }
+
+// ================== ACTIVITY FEED ==================
+
+export interface DashboardActivityItem {
+  id: string;
+  type: 'TRANSACTION' | 'USER' | 'DIAGNOSIS' | 'SYSTEM';
+  title: string;
+  description: string;
+  timestamp: Date;
+  status: 'success' | 'warning' | 'error' | 'info';
+  href?: string;
+}
+
+export async function getRecentActivity(): Promise<DashboardActivityItem[]> {
+  const { dbUser, supabase } = await verifyAdminAccess();
+
+  const activities: DashboardActivityItem[] = [];
+
+  // 1. Recent Transactions (limit 5)
+  const { data: transactions } = await supabase
+    .from('transactions')
+    .select('id, created_at, type, status, property_address, user_id')
+    .order('created_at', { ascending: false })
+    .limit(5);
+
+  if (transactions) {
+    for (const tx of transactions) {
+      activities.push({
+        id: `tx-${tx.id}`,
+        type: 'TRANSACTION',
+        title: 'Nova Transação Iniciada',
+        description: `${tx.type} - ${tx.property_address || 'Endereço não informado'}`,
+        timestamp: new Date(tx.created_at),
+        status: 'info',
+        href: `/admin/revisao`, // TODO: Link to specific transaction details
+      });
+    }
+  }
+
+  // 2. Recent Diagnoses updates (limit 5)
+  const { data: diagnoses } = await supabase
+    .from('diagnoses')
+    .select('id, updated_at, status, ai_confidence, transaction_id')
+    .order('updated_at', { ascending: false })
+    .limit(5);
+
+  if (diagnoses) {
+    for (const d of diagnoses) {
+      if (d.status === 'PENDING_REVIEW') {
+        activities.push({
+          id: `dg-${d.id}`,
+          type: 'DIAGNOSIS',
+          title: 'Diagnóstico Aguardando Revisão',
+          description: `Confiança da IA: ${Math.round((d.ai_confidence || 0) * 100)}%`,
+          timestamp: new Date(d.updated_at),
+          status: 'warning',
+          href: `/admin/revisao`,
+        });
+      } else if (d.status === 'DELIVERED') {
+        activities.push({
+          id: `dg-${d.id}`,
+          type: 'DIAGNOSIS',
+          title: 'Diagnóstico Entregue',
+          description: `Análise finalizada e enviada ao cliente.`,
+          timestamp: new Date(d.updated_at),
+          status: 'success',
+          href: `/admin/revisao`,
+        });
+      }
+    }
+  }
+
+  // 3. New Users (System Admin Only)
+  if (dbUser.role === 'SYSTEM_ADMIN') {
+    const { data: users } = await supabase
+      .from('users')
+      .select('id, created_at, email, name, role')
+      .order('created_at', { ascending: false })
+      .limit(3);
+
+    if (users) {
+      for (const u of users) {
+        activities.push({
+          id: `usr-${u.id}`,
+          type: 'USER',
+          title: 'Novo Usuário Registrado',
+          description: `${u.name} (${u.email}) - ${u.role}`,
+          timestamp: new Date(u.created_at),
+          status: 'success',
+          href: `/admin/usuarios`,
+        });
+      }
+    }
+  }
+
+  // Sort merged list by timestamp desc
+  return activities
+    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+    .slice(0, 10);
+}
+
+// ================== DIAGNOSIS DETAILS & EDITING ==================
+
+export interface DetailedDiagnosisItem extends PendingReviewItem {
+  documents: (Document & { signedUrl: string })[];
+}
+
+export async function getDiagnosisDetails(diagnosisId: string): Promise<DetailedDiagnosisItem | null> {
+  const { supabase } = await verifyAdminAccess();
+
+  const diagnosisRepo = new SupabaseDiagnosisRepository(supabase);
+  const transactionRepo = new SupabaseTransactionRepository(supabase);
+  const userRepo = new SupabaseUserRepository(supabase);
+  const documentRepo = new SupabaseDocumentRepository(supabase);
+
+  const diagnosis = await diagnosisRepo.findById(diagnosisId);
+  if (!diagnosis) return null;
+
+  const transaction = await transactionRepo.findById(diagnosis.transactionId);
+  if (!transaction) return null;
+
+  const user = await userRepo.findById(transaction.userId);
+  if (!user) return null;
+
+  const documents = await documentRepo.findByTransactionId(transaction.id);
+
+  // Generate signed URLs for documents
+  const documentsWithUrls = await Promise.all(documents.map(async (doc) => {
+    const { data } = await supabase.storage
+      .from('documents')
+      .createSignedUrl(doc.storageRef, 3600); // 1 hour validity
+
+    return {
+      ...doc,
+      signedUrl: data?.signedUrl || '',
+    };
+  }));
+
+  return {
+    diagnosis,
+    transaction,
+    userName: user.name,
+    userEmail: user.email,
+    documents: documentsWithUrls,
+  };
+}
+
+export async function updateDiagnosis(
+  diagnosisId: string,
+  updates: {
+    summary?: string;
+    risks?: RiskItem[];
+    pathways?: LegalPathway[];
+    aiConfidence?: number;
+  }
+): Promise<LegalDiagnosis> {
+  const { user, supabase } = await verifyAdminAccess();
+  // Here we could verify if user has permission to edit, but admin access is enough for now.
+
+  const diagnosisRepo = new SupabaseDiagnosisRepository(supabase);
+  return diagnosisRepo.updateContent(diagnosisId, updates);
+}
+

@@ -114,7 +114,7 @@ export function Topbar() {
           </div>
           <div className="flex flex-col justify-center">
             <span className="block font-bold text-lg text-text-primary tracking-tight leading-tight group-hover:text-primary transition-colors">PodeAssinar</span>
-            <span className="text-[9px] text-text-muted font-bold uppercase tracking-widest font-mono mt-0.5">AI ENGINE</span>
+            <span className="text-[9px] text-primary bg-orange-50 px-1.5 py-0.5 rounded border border-orange-100 font-bold uppercase tracking-widest font-mono mt-1">AI ENGINE</span>
           </div>
         </Link>
 
@@ -130,8 +130,8 @@ export function Topbar() {
                   href={item.href}
                   onClick={(e) => handleNavClick(e, item.href)}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm font-medium ${isActive
-                      ? 'bg-orange-50 text-primary'
-                      : 'text-text-secondary hover:bg-gray-50 hover:text-text-primary'
+                    ? 'bg-orange-50 text-primary'
+                    : 'text-text-secondary hover:bg-gray-50 hover:text-text-primary'
                     }`}
                 >
                   {item.icon}
