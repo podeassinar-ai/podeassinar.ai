@@ -20,12 +20,12 @@ import { createTransactionAction, updateTransactionAction } from '../actions/tra
 import { initiatePaymentAction } from '../actions/payment-actions';
 import { saveDocumentRecordAction } from '../actions/document-actions';
 import { checkSubscriptionCreditsAction, consumeSubscriptionCreditAction } from '../actions/subscription-actions';
-import { createClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
 import { mapGenericError } from '@/utils/error-mapping';
 import { getIdFromSlug } from '@/ui/constants/transactions';
 
-// Init client-side supabase for storage upload
-const supabase = createClient(
+// Init client-side supabase for storage upload and data fetching
+const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
