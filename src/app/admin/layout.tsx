@@ -12,12 +12,14 @@ const adminNavItems = [
   { href: '/admin/revisao', label: 'Fila de Revisão', icon: 'clipboard' },
   { href: '/admin/certidoes', label: 'Pedidos de Certidões', icon: 'document' },
   { href: '/admin/notificacoes', label: 'Notificações', icon: 'bell', showBadge: true },
+  { href: '/admin/usuarios', label: 'Usuários', icon: 'users', systemAdminOnly: true },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [hasAccess, setHasAccess] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
     async function checkAccess() {
@@ -38,11 +40,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         .eq('id', user.id)
         .single();
 
-      if (!dbUser || !['ADMIN', 'LAWYER'].includes(dbUser.role)) {
+      if (!dbUser || !['SYSTEM_ADMIN', 'ADMIN', 'LAWYER'].includes(dbUser.role)) {
         router.push('/');
         return;
       }
 
+      setUserRole(dbUser.role);
       setHasAccess(true);
       setLoading(false);
     }
@@ -82,17 +85,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </Link>
               </div>
               <div className="hidden sm:ml-8 sm:flex sm:space-x-4">
-                {adminNavItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-700 hover:text-primary hover:bg-gray-50 rounded-md"
-                  >
-                    {item.label}
-                    {'showBadge' in item && item.showBadge && <NotificationBadge />}
-                  </Link>
-                ))}
+                {adminNavItems
+                  .filter((item) => !('systemAdminOnly' in item && item.systemAdminOnly) || userRole === 'SYSTEM_ADMIN')
+                  .map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-700 hover:text-primary hover:bg-gray-50 rounded-md"
+                    >
+                      {item.label}
+                      {'showBadge' in item && item.showBadge && <NotificationBadge />}
+                    </Link>
+                  ))}
               </div>
+
 
             </div>
             <div className="flex items-center">

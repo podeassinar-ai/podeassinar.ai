@@ -1,9 +1,9 @@
 import { IUserRepository } from '@domain/interfaces/user-repository';
-import { User } from '@domain/entities/user';
+import { User, UserRole } from '@domain/entities/user';
 import { SupabaseClient } from '@supabase/supabase-js';
 
 export class SupabaseUserRepository implements IUserRepository {
-  constructor(private supabase: SupabaseClient) {}
+  constructor(private supabase: SupabaseClient) { }
 
   async findById(id: string): Promise<User | null> {
     const { data, error } = await this.supabase
@@ -106,6 +106,53 @@ export class SupabaseUserRepository implements IUserRepository {
     if (error) throw new Error(error.message);
 
     return user;
+  }
+
+  async findAll(limit = 100, offset = 0): Promise<User[]> {
+    const { data, error } = await this.supabase
+      .from('users')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error || !data) return [];
+
+    return data.map(u => ({
+      id: u.id,
+      email: u.email,
+      name: u.name,
+      role: u.role,
+      documentNumber: u.document_number,
+      phone: u.phone,
+      organizationId: u.organization_id,
+      isActive: u.is_active,
+      createdAt: new Date(u.created_at),
+      updatedAt: new Date(u.updated_at),
+    }));
+  }
+
+  async updateRole(userId: string, role: UserRole): Promise<User> {
+    const { data, error } = await this.supabase
+      .from('users')
+      .update({ role, updated_at: new Date().toISOString() })
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) throw new Error(`Failed to update user role: ${error.message}`);
+
+    return {
+      id: data.id,
+      email: data.email,
+      name: data.name,
+      role: data.role,
+      documentNumber: data.document_number,
+      phone: data.phone,
+      organizationId: data.organization_id,
+      isActive: data.is_active,
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at),
+    };
   }
 
   async deactivate(id: string): Promise<void> {

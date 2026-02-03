@@ -23,8 +23,26 @@ async function verifyAdminAccess() {
   const userRepo = new SupabaseUserRepository(supabase);
   const dbUser = await userRepo.findById(user.id);
 
-  if (!dbUser || !['ADMIN', 'LAWYER'].includes(dbUser.role)) {
+  if (!dbUser || !['SYSTEM_ADMIN', 'ADMIN', 'LAWYER'].includes(dbUser.role)) {
     throw new Error('Access denied: Admin or Lawyer role required');
+  }
+
+  return { user, supabase, dbUser };
+}
+
+async function verifySystemAdminAccess() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error('Unauthorized');
+  }
+
+  const userRepo = new SupabaseUserRepository(supabase);
+  const dbUser = await userRepo.findById(user.id);
+
+  if (!dbUser || dbUser.role !== 'SYSTEM_ADMIN') {
+    throw new Error('Access denied: System Admin role required');
   }
 
   return { user, supabase, dbUser };
@@ -35,10 +53,12 @@ export interface AdminDashboardStats {
   pendingFulfillments: number;
   processingTransactions: number;
   completedToday: number;
+  totalUsers?: number;
+  totalClients?: number;
 }
 
 export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
-  const { supabase } = await verifyAdminAccess();
+  const { supabase, dbUser } = await verifyAdminAccess();
 
   const diagnosisRepo = new SupabaseDiagnosisRepository(supabase);
   const fulfillmentRepo = new SupabaseFulfillmentRepository(supabase);
@@ -62,12 +82,29 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     .eq('status', 'DELIVERED')
     .gte('delivered_at', today.toISOString());
 
-  return {
+  const stats: AdminDashboardStats = {
     pendingReviews: pendingReviews.length,
     pendingFulfillments: pendingFulfillments.length,
     processingTransactions: processingData?.length ?? 0,
     completedToday: completedData?.length ?? 0,
   };
+
+  // Add user stats only for System Admin
+  if (dbUser.role === 'SYSTEM_ADMIN') {
+    const { count: userCount } = await serviceClient
+      .from('users')
+      .select('*', { count: 'exact', head: true });
+
+    const { count: clientCount } = await serviceClient
+      .from('users')
+      .select('*', { count: 'exact', head: true })
+      .eq('role', 'CLIENT');
+
+    stats.totalUsers = userCount ?? 0;
+    stats.totalClients = clientCount ?? 0;
+  }
+
+  return stats;
 }
 
 export interface PendingReviewItem {
@@ -211,3 +248,60 @@ export async function markAllNotificationsAsRead(): Promise<void> {
   }
 }
 
+// ================== USER MANAGEMENT ACTIONS (SYSTEM_ADMIN ONLY) ==================
+
+import { User, UserRole, getRoleLabel } from '@domain/entities/user';
+
+export interface UserListItem {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  roleLabel: string;
+  isActive: boolean;
+  createdAt: Date;
+}
+
+export async function getAllUsers(): Promise<UserListItem[]> {
+  await verifySystemAdminAccess();
+  const serviceClient = getSupabaseServiceClient();
+
+  const userRepo = new SupabaseUserRepository(serviceClient);
+  const users = await userRepo.findAll(200);
+
+  return users.map((u) => ({
+    id: u.id,
+    email: u.email,
+    name: u.name,
+    role: u.role,
+    roleLabel: getRoleLabel(u.role),
+    isActive: u.isActive,
+    createdAt: u.createdAt,
+  }));
+}
+
+export async function updateUserRole(userId: string, newRole: UserRole): Promise<User> {
+  const { dbUser } = await verifySystemAdminAccess();
+  const serviceClient = getSupabaseServiceClient();
+
+  // Prevent self-demotion
+  if (dbUser.id === userId && newRole !== 'SYSTEM_ADMIN') {
+    throw new Error('Cannot demote yourself');
+  }
+
+  const userRepo = new SupabaseUserRepository(serviceClient);
+  return userRepo.updateRole(userId, newRole);
+}
+
+export async function deactivateUser(userId: string): Promise<void> {
+  const { dbUser } = await verifySystemAdminAccess();
+  const serviceClient = getSupabaseServiceClient();
+
+  // Prevent self-deactivation
+  if (dbUser.id === userId) {
+    throw new Error('Cannot deactivate yourself');
+  }
+
+  const userRepo = new SupabaseUserRepository(serviceClient);
+  await userRepo.deactivate(userId);
+}

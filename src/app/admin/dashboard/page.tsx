@@ -4,15 +4,15 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getAdminDashboardStats, AdminDashboardStats } from '@app/actions/admin-actions';
 
-function StatCard({ 
-  title, 
-  value, 
-  href, 
-  color 
-}: { 
-  title: string; 
-  value: number; 
-  href: string; 
+function StatCard({
+  title,
+  value,
+  href,
+  color
+}: {
+  title: string;
+  value: number;
+  href: string;
   color: string;
 }) {
   return (
@@ -98,6 +98,22 @@ export default function AdminDashboardPage() {
           href="/admin/dashboard"
           color="border-green-500"
         />
+        {stats?.totalUsers !== undefined && (
+          <StatCard
+            title="Usuários Registrados"
+            value={stats.totalUsers}
+            href="/admin/usuarios"
+            color="border-orange-500"
+          />
+        )}
+        {stats?.totalClients !== undefined && (
+          <StatCard
+            title="Total de Clientes"
+            value={stats.totalClients}
+            href="/admin/usuarios"
+            color="border-pink-500"
+          />
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -132,6 +148,22 @@ export default function AdminDashboardPage() {
                 </span>
               </div>
             </Link>
+            {stats?.totalUsers !== undefined && (
+              <Link
+                href="/admin/usuarios"
+                className="block p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-gray-900">Gerenciar Usuários</p>
+                    <p className="text-sm text-gray-500">Controlar permissões e papéis do sistema</p>
+                  </div>
+                  <span className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
+                    {stats.totalUsers} usuários
+                  </span>
+                </div>
+              </Link>
+            )}
           </div>
         </div>
 

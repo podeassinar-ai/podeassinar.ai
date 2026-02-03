@@ -6,3 +6,5 @@ export * from './supabase-diagnosis-repository';
 export * from './supabase-fulfillment-repository';
 export * from './supabase-questionnaire-repository';
 export * from './supabase-notification-repository';
+export * from './supabase-plan-repository';
+export * from './supabase-subscription-repository';

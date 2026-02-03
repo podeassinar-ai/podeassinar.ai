@@ -41,6 +41,15 @@ const navItems: NavItem[] = [
     ),
   },
   {
+    href: '/planos',
+    label: 'Planos',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+      </svg>
+    ),
+  },
+  {
     href: '/documentos',
     label: 'Documentos',
     protected: true,
@@ -94,14 +103,14 @@ export function Topbar() {
         <Link href="/" className="flex items-center gap-4 group min-w-fit">
           {/* Container pequeno para o layout, mas logo grande transbordando */}
           <div className="relative w-10 h-10 flex-shrink-0">
-             <div className="absolute w-24 h-24 -top-7 -left-7">
-                <Image 
-                  src="/logo.png" 
-                  alt="PodeAssinar Logo" 
-                  fill
-                  className="object-contain"
-                />
-             </div>
+            <div className="absolute w-24 h-24 -top-7 -left-7">
+              <Image
+                src="/logo.png"
+                alt="PodeAssinar Logo"
+                fill
+                className="object-contain"
+              />
+            </div>
           </div>
           <div className="flex flex-col justify-center">
             <span className="block font-bold text-lg text-text-primary tracking-tight leading-tight group-hover:text-primary transition-colors">PodeAssinar</span>
@@ -120,11 +129,10 @@ export function Topbar() {
                   key={item.href}
                   href={item.href}
                   onClick={(e) => handleNavClick(e, item.href)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm font-medium ${
-                    isActive 
-                      ? 'bg-orange-50 text-primary' 
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm font-medium ${isActive
+                      ? 'bg-orange-50 text-primary'
                       : 'text-text-secondary hover:bg-gray-50 hover:text-text-primary'
-                  }`}
+                    }`}
                 >
                   {item.icon}
                   <span>{item.label}</span>
@@ -148,7 +156,7 @@ export function Topbar() {
               <div className="w-8 h-8 bg-primary/10 text-primary rounded-lg flex items-center justify-center font-bold font-mono text-sm border border-primary/20">
                 {userInitials}
               </div>
-              <button 
+              <button
                 onClick={handleLogout}
                 className="text-text-muted hover:text-red-500 transition-colors p-1.5 hover:bg-red-50 rounded-lg"
                 title="Sair"
