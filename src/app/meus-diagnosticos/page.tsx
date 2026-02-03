@@ -44,18 +44,34 @@ export default async function MeusDiagnosticosPage() {
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
-
   let transactions: any[] = [];
+  let error = null;
 
-  if (user) {
-    const { data } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+  try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-    if (data) transactions = data;
+    if (userError) {
+      console.error('Error fetching user:', userError);
+      // Don't throw, just let it render empty or redirect
+    }
+
+    if (user) {
+      const { data, error: dbError } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (dbError) {
+        console.error('Error fetching transactions:', dbError);
+        error = dbError.message;
+      } else if (data) {
+        transactions = data;
+      }
+    }
+  } catch (err) {
+    console.error('Unexpected error in MeusDiagnosticosPage:', err);
+    error = 'Erro interno ao carregar dados.';
   }
 
   return (
@@ -75,7 +91,17 @@ export default async function MeusDiagnosticosPage() {
           </Link>
         }
       >
-        {transactions.length === 0 ? (
+        {error ? (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-8 text-center">
+            <h3 className="text-lg font-bold text-red-800 mb-2">Erro ao carregar análises</h3>
+            <p className="text-red-600 mb-4">{error}</p>
+            <Link href="/meus-diagnosticos">
+              <Button variant="ghost" className="border border-red-200 text-red-700 hover:bg-red-100">
+                Tentar novamente
+              </Button>
+            </Link>
+          </div>
+        ) : transactions.length === 0 ? (
           <div className="bg-white border border-border border-dashed rounded-lg p-12 text-center">
             <div className="w-16 h-16 mx-auto mb-4 bg-gray-50 rounded-full flex items-center justify-center animate-pulse">
               <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
