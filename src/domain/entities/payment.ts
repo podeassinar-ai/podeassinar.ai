@@ -1,11 +1,11 @@
-export type PaymentStatus = 
+export type PaymentStatus =
   | 'PENDING'
   | 'PROCESSING'
   | 'COMPLETED'
   | 'FAILED'
   | 'REFUNDED';
 
-export type PaymentType = 'DIAGNOSTIC' | 'CERTIFICATE_REQUEST' | 'LEGAL_SERVICE';
+export type PaymentType = 'DIAGNOSTIC' | 'CERTIFICATE_REQUEST' | 'LEGAL_SERVICE' | 'SUBSCRIPTION';
 
 export interface Payment {
   id: string;

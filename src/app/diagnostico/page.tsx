@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Topbar } from '@ui/components/layout/topbar';
 import { MainContainer } from '@ui/components/layout/main-container';
 import { TransactionTypeModal } from '@ui/components/layout/transaction-type-modal';
@@ -19,6 +19,7 @@ import {
 import { createTransactionAction, updateTransactionAction } from '../actions/transaction-actions';
 import { initiatePaymentAction } from '../actions/payment-actions';
 import { saveDocumentRecordAction } from '../actions/document-actions';
+import { checkSubscriptionCreditsAction, consumeSubscriptionCreditAction } from '../actions/subscription-actions';
 import { createClient } from '@supabase/supabase-js';
 import { mapGenericError } from '@/utils/error-mapping';
 import { getIdFromSlug } from '@/ui/constants/transactions';
@@ -56,9 +57,156 @@ interface FormData {
   additionalInfo: string;
 }
 
+interface PaymentStepProps {
+  transactionId: string | null;
+  matriculaOption: string;
+  loading: boolean;
+  setLoading: (loading: boolean) => void;
+  onPaymentClick: () => void;
+  addToast: (message: string, type: 'success' | 'error' | 'info') => void;
+}
 
+function PaymentStep({ transactionId, matriculaOption, loading, setLoading, onPaymentClick, addToast }: PaymentStepProps) {
+  const router = useRouter();
+  const [creditInfo, setCreditInfo] = useState<{
+    hasActiveSubscription: boolean;
+    hasAvailableCredits: boolean;
+    remainingCredits: number;
+    totalCredits: number;
+    planName?: string;
+  } | null>(null);
+  const [checkingCredits, setCheckingCredits] = useState(true);
+  const [usingCredit, setUsingCredit] = useState(false);
 
-// ... imports remain the same
+  useEffect(() => {
+    async function checkCredits() {
+      try {
+        const info = await checkSubscriptionCreditsAction();
+        setCreditInfo(info);
+      } catch (err) {
+        console.error('Error checking credits:', err);
+      } finally {
+        setCheckingCredits(false);
+      }
+    }
+    checkCredits();
+  }, []);
+
+  const handleUseCredit = async () => {
+    if (!transactionId) return;
+
+    setUsingCredit(true);
+    try {
+      const result = await consumeSubscriptionCreditAction(transactionId);
+      if (result.success) {
+        addToast('Crédito utilizado com sucesso! Sua análise será processada.', 'success');
+        router.push('/meus-diagnosticos');
+      } else {
+        addToast(result.message || 'Erro ao usar crédito', 'error');
+      }
+    } catch (err: any) {
+      addToast('Erro ao usar crédito: ' + mapGenericError(err.message), 'error');
+    } finally {
+      setUsingCredit(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Subscription Credit Option */}
+      {!checkingCredits && creditInfo?.hasAvailableCredits && (
+        <Card className="bg-gradient-to-r from-primary/5 to-orange-50 border-primary/20">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+              <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="font-bold text-text-primary mb-1">Use seu crédito de assinatura</h3>
+              <p className="text-sm text-text-secondary mb-4">
+                Você tem <strong>{creditInfo.remainingCredits}</strong> créditos disponíveis
+                no plano <strong>{creditInfo.planName}</strong>.
+              </p>
+              <Button
+                variant="primary"
+                onClick={handleUseCredit}
+                loading={usingCredit}
+                disabled={usingCredit || loading}
+                className="w-full sm:w-auto"
+              >
+                Usar Crédito (Grátis)
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Regular Payment Option */}
+      <Card className="bg-white">
+        <div className="text-center mb-8">
+          <div className="w-12 h-12 bg-secondary/10 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <svg className="w-6 h-6 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-text-primary">
+            {creditInfo?.hasAvailableCredits ? 'Ou pague normalmente' : 'Confirmação da Análise'}
+          </h3>
+          <p className="text-text-secondary mt-1">Revise os valores da Due Diligence</p>
+        </div>
+
+        <div className="bg-gray-50 rounded border border-border p-6 mb-6">
+          <div className="space-y-4">
+            <div className="flex justify-between items-center pb-4 border-b border-gray-200">
+              <div>
+                <span className="block font-medium text-text-primary">Due Diligence Imobiliária</span>
+                <span className="text-sm text-text-muted">Análise IA + Relatório + Validação</span>
+              </div>
+              <span className="font-semibold text-text-primary font-mono">R$ 300,00</span>
+            </div>
+
+            {matriculaOption === 'solicitar' && (
+              <div className="flex justify-between items-center pb-4 border-b border-gray-200">
+                <div>
+                  <span className="block font-medium text-text-primary">Serviço de Busca de Certidão</span>
+                  <span className="text-sm text-text-muted">Taxas cartorárias + Emissão digital</span>
+                </div>
+                <span className="font-semibold text-text-primary font-mono">R$ 50,00</span>
+              </div>
+            )}
+
+            <div className="flex justify-between items-center pt-2">
+              <span className="font-bold text-lg text-primary">Total</span>
+              <span className="font-bold text-2xl text-primary font-mono">
+                R$ {matriculaOption === 'solicitar' ? '350,00' : '300,00'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <Button
+          variant={creditInfo?.hasAvailableCredits ? 'secondary' : 'primary'}
+          size="lg"
+          className="w-full py-4 text-lg"
+          onClick={onPaymentClick}
+          loading={loading}
+          disabled={usingCredit}
+        >
+          Ir para Pagamento (Seguro)
+        </Button>
+
+        <p className="text-center text-xs text-text-muted mt-4 flex items-center justify-center gap-2">
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+          Ambiente seguro. Dados criptografados.
+        </p>
+      </Card>
+    </div>
+  );
+}
+
 
 function DiagnosticoContent() {
   const searchParams = useSearchParams();
@@ -432,65 +580,14 @@ function DiagnosticoContent() {
           )}
 
           {currentStep === 3 && (
-            <div className="space-y-6">
-              <Card className="bg-white">
-                <div className="text-center mb-8">
-                  <div className="w-12 h-12 bg-secondary/10 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-                    <svg className="w-6 h-6 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-xl font-bold text-text-primary">Confirmação da Análise</h3>
-                  <p className="text-text-secondary mt-1">Revise os valores da Due Diligence</p>
-                </div>
-
-                <div className="bg-gray-50 rounded border border-border p-6 mb-6">
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center pb-4 border-b border-gray-200">
-                      <div>
-                        <span className="block font-medium text-text-primary">Due Diligence Imobiliária</span>
-                        <span className="text-sm text-text-muted">Análise IA + Relatório + Validação</span>
-                      </div>
-                      <span className="font-semibold text-text-primary font-mono">R$ 300,00</span>
-                    </div>
-
-                    {formData.matriculaOption === 'solicitar' && (
-                      <div className="flex justify-between items-center pb-4 border-b border-gray-200">
-                        <div>
-                          <span className="block font-medium text-text-primary">Serviço de Busca de Certidão</span>
-                          <span className="text-sm text-text-muted">Taxas cartorárias + Emissão digital</span>
-                        </div>
-                        <span className="font-semibold text-text-primary font-mono">R$ 50,00</span>
-                      </div>
-                    )}
-
-                    <div className="flex justify-between items-center pt-2">
-                      <span className="font-bold text-lg text-primary">Total</span>
-                      <span className="font-bold text-2xl text-primary font-mono">
-                        R$ {formData.matriculaOption === 'solicitar' ? '350,00' : '300,00'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <Button
-                  variant="primary"
-                  size="lg"
-                  className="w-full py-4 text-lg"
-                  onClick={handlePayment}
-                  loading={loading}
-                >
-                  Ir para Pagamento (Seguro)
-                </Button>
-
-                <p className="text-center text-xs text-text-muted mt-4 flex items-center justify-center gap-2">
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                  Ambiente seguro. Dados criptografados.
-                </p>
-              </Card>
-            </div>
+            <PaymentStep
+              transactionId={transactionId}
+              matriculaOption={formData.matriculaOption}
+              loading={loading}
+              setLoading={setLoading}
+              onPaymentClick={handlePayment}
+              addToast={addToast}
+            />
           )}
 
           <div className="flex justify-between mt-8 pt-6 border-t border-border/50">
