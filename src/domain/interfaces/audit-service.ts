@@ -1,4 +1,4 @@
-export type AuditAction = 
+export type AuditAction =
   | 'CREATE'
   | 'READ'
   | 'UPDATE'
@@ -6,12 +6,14 @@ export type AuditAction =
   | 'DOWNLOAD'
   | 'EXPORT';
 
-export type AuditResource = 
+export type AuditResource =
   | 'TRANSACTION'
   | 'DOCUMENT'
   | 'DIAGNOSIS'
   | 'USER'
-  | 'PAYMENT';
+  | 'PAYMENT'
+  | 'ADMIN_NOTIFICATION'
+  | 'EMAIL_NOTIFICATION';
 
 export interface AuditLogEntry {
   id: string;

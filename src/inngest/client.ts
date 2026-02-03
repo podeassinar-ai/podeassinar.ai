@@ -13,4 +13,15 @@ export type DiagnosisGenerateRequestedEvent = {
   };
 };
 
-export type InngestEvents = DiagnosisGenerateRequestedEvent;
+export type DocumentExtractionRequestedEvent = {
+  name: 'document/extraction-requested';
+  data: {
+    documentId: string;
+    userId: string;
+  };
+};
+
+export type InngestEvents =
+  | DiagnosisGenerateRequestedEvent
+  | DocumentExtractionRequestedEvent;
+

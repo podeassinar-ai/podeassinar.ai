@@ -8,10 +8,12 @@ import { SupabaseDocumentRepository } from '@infrastructure/repositories/supabas
 import { OpenAIService } from '@infrastructure/services/openai-service';
 import { SupabaseAuditService } from '@infrastructure/services/supabase-audit-service';
 import { SupabaseStorageService } from '@infrastructure/services/supabase-storage-service';
+import { PythonDocumentExtractor } from '@infrastructure/services/extraction';
 import { GenerateAIDiagnosisUseCase } from '@application/use-cases/generate-ai-diagnosis';
+import { ExtractDocumentTextUseCase } from '@application/use-cases/extract-document-text';
 
 class QuestionnaireRepository {
-  constructor(private supabase: ReturnType<typeof getSupabaseServiceClient>) {}
+  constructor(private supabase: ReturnType<typeof getSupabaseServiceClient>) { }
 
   async findByTransactionId(transactionId: string) {
     const { data, error } = await this.supabase
@@ -34,6 +36,43 @@ class QuestionnaireRepository {
     };
   }
 }
+
+export const extractDocumentText = inngest.createFunction(
+  {
+    id: 'extract-document-text',
+    retries: 2,
+  },
+  { event: 'document/extraction-requested' },
+  async ({ event, step }) => {
+    const { documentId, userId } = event.data;
+
+    const result = await step.run('extract-text', async () => {
+      const supabase = getSupabaseServiceClient();
+
+      const documentRepo = new SupabaseDocumentRepository(supabase);
+      const storageService = new SupabaseStorageService();
+      const documentExtractor = new PythonDocumentExtractor();
+      const auditService = new SupabaseAuditService();
+
+      const useCase = new ExtractDocumentTextUseCase(
+        documentRepo,
+        storageService,
+        documentExtractor,
+        auditService
+      );
+
+      const extractionResult = await useCase.execute({ documentId, userId });
+      return {
+        documentId: extractionResult.document.id,
+        success: extractionResult.success,
+        textLength: extractionResult.extractedText.length,
+        error: extractionResult.error,
+      };
+    });
+
+    return result;
+  }
+);
 
 export const generateDiagnosis = inngest.createFunction(
   {
@@ -78,4 +117,5 @@ export const generateDiagnosis = inngest.createFunction(
   }
 );
 
-export const inngestFunctions = [generateDiagnosis];
+export const inngestFunctions = [extractDocumentText, generateDiagnosis];
+

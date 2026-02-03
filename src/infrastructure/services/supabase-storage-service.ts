@@ -12,7 +12,7 @@ export class SupabaseStorageService implements IStorageService {
     folder: string
   ): Promise<StorageUploadResult> {
     const supabase = getSupabaseServiceClient();
-    
+
     const extension = fileName.split('.').pop() || '';
     const uniqueFileName = `${uuidv4()}.${extension}`;
     const storageRef = `${folder}/${uniqueFileName}`;
@@ -37,9 +37,23 @@ export class SupabaseStorageService implements IStorageService {
     };
   }
 
+  async download(storageRef: string): Promise<Buffer> {
+    const supabase = getSupabaseServiceClient();
+
+    const { data, error } = await supabase.storage
+      .from(this.bucketName)
+      .download(storageRef);
+
+    if (error) throw new Error(`Failed to download file: ${error.message}`);
+
+    const arrayBuffer = await data.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+  }
+
+
   async getSignedUrl(storageRef: string, expiresInSeconds = 3600): Promise<string> {
     const supabase = getSupabaseServiceClient();
-    
+
     const { data, error } = await supabase.storage
       .from(this.bucketName)
       .createSignedUrl(storageRef, expiresInSeconds);
@@ -50,7 +64,7 @@ export class SupabaseStorageService implements IStorageService {
 
   async delete(storageRef: string): Promise<void> {
     const supabase = getSupabaseServiceClient();
-    
+
     const { error } = await supabase.storage
       .from(this.bucketName)
       .remove([storageRef]);
@@ -62,7 +76,7 @@ export class SupabaseStorageService implements IStorageService {
     if (storageRefs.length === 0) return;
 
     const supabase = getSupabaseServiceClient();
-    
+
     const { error } = await supabase.storage
       .from(this.bucketName)
       .remove(storageRefs);

@@ -9,3 +9,5 @@ export * from './storage-service';
 export * from './ai-service';
 export * from './payment-gateway';
 export * from './audit-service';
+export * from './notification-repository';
+export * from './email-service';

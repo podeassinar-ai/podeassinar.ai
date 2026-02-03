@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { createBrowserClient } from '@supabase/ssr';
+import { NotificationBadge } from '@/components/admin/notification-badge';
 
 const adminNavItems = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: 'chart' },
   { href: '/admin/revisao', label: 'Fila de Revisão', icon: 'clipboard' },
   { href: '/admin/certidoes', label: 'Pedidos de Certidões', icon: 'document' },
+  { href: '/admin/notificacoes', label: 'Notificações', icon: 'bell', showBadge: true },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -23,7 +25,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       );
-      
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         router.push('/login');
@@ -69,12 +71,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <div className="flex-shrink-0 flex items-center">
                 <Link href="/admin/dashboard" className="flex items-center gap-3">
                   <div className="relative w-20 h-20 -my-4">
-                     <Image 
-                       src="/logo.png" 
-                       alt="PodeAssinar Logo" 
-                       fill
-                       className="object-contain"
-                     />
+                    <Image
+                      src="/logo.png"
+                      alt="PodeAssinar Logo"
+                      fill
+                      className="object-contain"
+                    />
                   </div>
                   <span className="text-xl font-bold text-primary -ml-2">Admin</span>
                 </Link>
@@ -84,12 +86,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <Link
                     key={item.href}
                     href={item.href}
-                    className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-primary hover:bg-gray-50 rounded-md"
+                    className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-700 hover:text-primary hover:bg-gray-50 rounded-md"
                   >
                     {item.label}
+                    {'showBadge' in item && item.showBadge && <NotificationBadge />}
                   </Link>
                 ))}
               </div>
+
             </div>
             <div className="flex items-center">
               <Link
