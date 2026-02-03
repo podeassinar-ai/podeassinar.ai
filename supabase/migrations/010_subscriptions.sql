@@ -97,6 +97,6 @@ CREATE POLICY "Users can update own subscriptions"
 
 -- Seed some initial plans
 INSERT INTO plans (name, description, diagnoses_per_cycle, price_cents, billing_cycle) VALUES
-  ('Starter', 'Ideal para pequenas imobiliárias', 5, 12500, 'MONTHLY'),
-  ('Professional', 'Para imobiliárias em crescimento', 15, 30000, 'MONTHLY'),
-  ('Enterprise', 'Para grandes operações', 50, 75000, 'MONTHLY');
+  ('Starter', 'Ideal para pequenas imobiliárias', 5, 90000, 'MONTHLY'),
+  ('Professional', 'Para imobiliárias em crescimento', 15, 250000, 'MONTHLY'),
+  ('Enterprise', 'Para grandes operações', 50, 820000, 'MONTHLY');
