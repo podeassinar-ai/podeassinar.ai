@@ -115,31 +115,41 @@ function PaymentStep({ transactionId, matriculaOption, loading, setLoading, onPa
     <div className="space-y-6">
       {/* Subscription Credit Option */}
       {!checkingCredits && creditInfo?.hasAvailableCredits && (
-        <Card className="bg-gradient-to-r from-primary/5 to-orange-50 border-primary/20">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-              <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-gray-900 to-gray-800 p-8 text-white shadow-xl animate-fade-up ring-4 ring-primary/10">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/20 rounded-full blur-3xl -ml-12 -mb-12 pointer-events-none"></div>
+
+          <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start gap-6">
+            <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center flex-shrink-0 shadow-inner">
+              <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <div className="flex-1">
-              <h3 className="font-bold text-text-primary mb-1">Use seu crédito de assinatura</h3>
-              <p className="text-sm text-text-secondary mb-4">
-                Você tem <strong>{creditInfo.remainingCredits}</strong> créditos disponíveis
-                no plano <strong>{creditInfo.planName}</strong>.
+
+            <div className="flex-1 text-center sm:text-left">
+              <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
+                <h3 className="text-xl font-bold text-white">Usar crédito do plano</h3>
+                <span className="px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs font-bold border border-primary/20 uppercase tracking-wide">
+                  Recomendado
+                </span>
+              </div>
+              <p className="text-white/80 mb-6">
+                Você tem <strong>{creditInfo.remainingCredits}</strong> análises disponíveis no seu plano <strong>{creditInfo.planName}</strong>.
+                <br className="hidden sm:block" /> Aproveite para usar agora sem custo adicional.
               </p>
+
               <Button
                 variant="primary"
                 onClick={handleUseCredit}
                 loading={usingCredit}
                 disabled={usingCredit || loading}
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto px-8 py-3 text-lg font-bold shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:-translate-y-0.5 transition-all"
               >
-                Usar Crédito (Grátis)
+                Usar 1 Crédito (Grátis)
               </Button>
             </div>
           </div>
-        </Card>
+        </div>
       )}
 
       {/* Regular Payment Option */}

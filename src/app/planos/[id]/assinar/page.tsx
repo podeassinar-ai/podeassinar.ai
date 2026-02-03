@@ -101,114 +101,129 @@ export default function SubscriptionCheckoutPage() {
     return (
         <>
             <Topbar />
+            <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px] transform translate-x-1/3 -translate-y-1/3"></div>
+                <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-orange-500/5 rounded-full blur-[100px] transform -translate-x-1/3 translate-y-1/3"></div>
+            </div>
+
             <MainContainer>
-                <div className="max-w-lg mx-auto py-8">
+                <div className="max-w-xl mx-auto py-8">
                     {/* Header */}
-                    <div className="text-center mb-8">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 mb-4 text-xs font-mono font-bold tracking-wider text-primary uppercase bg-orange-50 rounded border border-orange-100">
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <div className="text-center mb-10 animate-fade-up">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 mb-4 text-xs font-mono font-bold tracking-wider text-green-700 uppercase bg-green-50 rounded-full border border-green-200 shadow-sm">
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                             </svg>
-                            CONFIRMAÇÃO
+                            AMBIENTE SEGURO
                         </div>
-                        <h1 className="text-2xl font-bold text-text-primary mb-2">
+                        <h1 className="text-3xl font-bold text-text-primary mb-3">
                             Confirmar Assinatura
                         </h1>
-                        <p className="text-text-secondary">
-                            Revise os detalhes do plano antes de prosseguir
+                        <p className="text-text-secondary text-lg">
+                            Você está a um passo de automatizar suas análises.
                         </p>
                     </div>
 
-                    {/* Plan Summary Card */}
-                    <div className="bg-white rounded-xl border border-border p-6 mb-6 shadow-sm">
-                        <div className="flex items-start justify-between mb-4">
+                    {/* Checkout Card - Glassmorphism */}
+                    <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-white/20 shadow-xl p-8 mb-8 animate-fade-up" style={{ animationDelay: '100ms' }}>
+                        <div className="flex items-start justify-between mb-8 pb-8 border-b border-gray-100">
                             <div>
-                                <h2 className="text-xl font-bold text-text-primary">{plan.name}</h2>
-                                <p className="text-sm text-text-secondary">{plan.description}</p>
+                                <h2 className="text-2xl font-bold text-text-primary mb-1">{plan.name}</h2>
+                                <p className="text-text-secondary">{plan.description}</p>
                             </div>
                             <div className="text-right">
-                                <p className="text-2xl font-bold text-primary">{formatPlanPrice(plan)}</p>
-                                <p className="text-xs text-text-muted">/{billingCycleLabel}</p>
+                                <p className="text-3xl font-extrabold text-primary">{formatPlanPrice(plan)}</p>
+                                <p className="text-sm font-medium text-text-muted">/{billingCycleLabel}</p>
                             </div>
                         </div>
 
-                        <div className="border-t border-border pt-4 space-y-3">
-                            <div className="flex items-center gap-3 text-sm">
-                                <svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span className="text-text-secondary">
-                                    <strong>{plan.diagnosesPerCycle}</strong> diagnósticos por {billingCycleLabel}
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-3 text-sm">
-                                <svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span className="text-text-secondary">Acesso prioritário à análise</span>
-                            </div>
-                            <div className="flex items-center gap-3 text-sm">
-                                <svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span className="text-text-secondary">Suporte dedicado</span>
-                            </div>
-                            <div className="flex items-center gap-3 text-sm">
-                                <svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span className="text-text-secondary">Cancele a qualquer momento</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Terms Notice */}
-                    <div className="bg-gray-50 rounded-lg p-4 mb-6 text-sm text-text-secondary">
-                        <p>
-                            Ao clicar em "Confirmar e Pagar", você concorda com nossos{' '}
-                            <a href="/termos" className="text-primary hover:underline">Termos de Uso</a>
-                            {' '}e{' '}
-                            <a href="/privacidade" className="text-primary hover:underline">Política de Privacidade</a>.
-                            Sua assinatura será renovada automaticamente a cada {billingCycleLabel}.
-                        </p>
-                    </div>
-
-                    {/* Error Display */}
-                    {error && (
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-sm text-red-700">
-                            {error}
-                        </div>
-                    )}
-
-                    {/* Action Buttons */}
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        <Button
-                            variant="secondary"
-                            className="flex-1"
-                            onClick={() => router.push('/planos')}
-                            disabled={submitting}
-                        >
-                            Voltar
-                        </Button>
-                        <Button
-                            variant="primary"
-                            className="flex-1"
-                            onClick={handleSubscribe}
-                            disabled={submitting}
-                        >
-                            {submitting ? (
-                                <span className="flex items-center gap-2">
-                                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        <div className="space-y-4 mb-8">
+                            <div className="flex items-center gap-3">
+                                <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                                    <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                                     </svg>
-                                    Processando...
+                                </div>
+                                <span className="text-text-primary">
+                                    <strong>{plan.diagnosesPerCycle}</strong> diagnósticos mensais
                                 </span>
-                            ) : (
-                                'Confirmar e Pagar'
-                            )}
-                        </Button>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                                    <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                                <span className="text-text-primary">Renovação automática</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                                    <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                                <span className="text-text-primary">Cancelamento sem multa</span>
+                            </div>
+                        </div>
+
+                        {/* Terms Notice */}
+                        <div className="bg-gray-50 rounded-xl p-4 mb-8 text-sm text-text-secondary leading-relaxed">
+                            <p>
+                                Ao clicar em "Pagar Agora", você será redirecionado para o checkout seguro da Stripe.
+                                Sua assinatura de {formatPlanPrice(plan)} será cobrada a cada {billingCycleLabel}.
+                            </p>
+                        </div>
+
+                        {/* Error Display */}
+                        {error && (
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-sm text-red-700 animate-pulse">
+                                {error}
+                            </div>
+                        )}
+
+                        {/* Action Buttons */}
+                        <div className="space-y-3">
+                            <Button
+                                variant="primary"
+                                size="lg"
+                                className="w-full text-lg h-14 shadow-lg shadow-primary/20 hover:-translate-y-0.5 transition-transform"
+                                onClick={handleSubscribe}
+                                disabled={submitting}
+                            >
+                                {submitting ? (
+                                    <span className="flex items-center gap-2">
+                                        <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        Redirecionando...
+                                    </span>
+                                ) : (
+                                    'Pagar Agora'
+                                )}
+                            </Button>
+
+                            <Button
+                                variant="ghost"
+                                className="w-full text-text-muted hover:text-text-primary"
+                                onClick={() => router.push('/planos')}
+                                disabled={submitting}
+                            >
+                                Cancelar e Voltar
+                            </Button>
+                        </div>
                     </div>
+
+                    <p className="text-center text-xs text-text-muted flex items-center justify-center gap-4 opacity-70">
+                        <span className="flex items-center gap-1">
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14h-2v-2h2v2zm0-4h-2V7h2v5z" /></svg>
+                            Pagamento Criptografado
+                        </span>
+                        <span className="flex items-center gap-1">
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm4.24 16L12 15.45 7.77 18l1.12-4.81-3.73-3.23 4.92-.42L12 5l1.92 4.53 4.92.42-3.73 3.23L16.23 18z" /></svg>
+                            Satisfação Garantida
+                        </span>
+                    </p>
                 </div>
             </MainContainer>
         </>
