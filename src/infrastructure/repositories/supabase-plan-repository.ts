@@ -35,7 +35,12 @@ export class SupabasePlanRepository implements IPlanRepository {
             .eq('is_active', true)
             .order('price_cents', { ascending: true });
 
-        if (error || !data) return [];
+        if (error) {
+            console.error('Error fetching active plans:', error);
+            return [];
+        }
+
+        if (!data) return [];
 
         return data.map(this.mapToEntity);
     }
