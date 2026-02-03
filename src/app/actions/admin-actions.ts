@@ -1,7 +1,7 @@
 'use server';
 
 import { createClient } from '@infrastructure/database/supabase-server';
-import { getSupabaseServiceClient } from '@infrastructure/database/supabase-client';
+
 import {
   SupabaseTransactionRepository,
   SupabaseDiagnosisRepository,
@@ -63,12 +63,10 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
   const diagnosisRepo = new SupabaseDiagnosisRepository(supabase);
   const fulfillmentRepo = new SupabaseFulfillmentRepository(supabase);
 
-  const serviceClient = getSupabaseServiceClient();
-
   const pendingReviews = await diagnosisRepo.findPendingReview();
   const pendingFulfillments = await fulfillmentRepo.findPending();
 
-  const { data: processingData } = await serviceClient
+  const { data: processingData } = await supabase
     .from('transactions')
     .select('id')
     .eq('status', 'PROCESSING');
@@ -76,7 +74,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const { data: completedData } = await serviceClient
+  const { data: completedData } = await supabase
     .from('diagnoses')
     .select('id')
     .eq('status', 'DELIVERED')
@@ -91,11 +89,11 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
 
   // Add user stats only for System Admin
   if (dbUser.role === 'SYSTEM_ADMIN') {
-    const { count: userCount } = await serviceClient
+    const { count: userCount } = await supabase
       .from('users')
       .select('*', { count: 'exact', head: true });
 
-    const { count: clientCount } = await serviceClient
+    const { count: clientCount } = await supabase
       .from('users')
       .select('*', { count: 'exact', head: true })
       .eq('role', 'CLIENT');
@@ -107,6 +105,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
   return stats;
 }
 
+
 export interface PendingReviewItem {
   diagnosis: LegalDiagnosis;
   transaction: Transaction;
@@ -115,12 +114,11 @@ export interface PendingReviewItem {
 }
 
 export async function getPendingReviews(): Promise<PendingReviewItem[]> {
-  await verifyAdminAccess();
-  const serviceClient = getSupabaseServiceClient();
+  const { supabase } = await verifyAdminAccess();
 
-  const diagnosisRepo = new SupabaseDiagnosisRepository(serviceClient);
-  const transactionRepo = new SupabaseTransactionRepository(serviceClient);
-  const userRepo = new SupabaseUserRepository(serviceClient);
+  const diagnosisRepo = new SupabaseDiagnosisRepository(supabase);
+  const transactionRepo = new SupabaseTransactionRepository(supabase);
+  const userRepo = new SupabaseUserRepository(supabase);
 
   const pendingDiagnoses = await diagnosisRepo.findPendingReview();
   const results: PendingReviewItem[] = [];
@@ -144,19 +142,17 @@ export async function getPendingReviews(): Promise<PendingReviewItem[]> {
 }
 
 export async function approveDiagnosis(diagnosisId: string): Promise<LegalDiagnosis> {
-  const { user } = await verifyAdminAccess();
-  const serviceClient = getSupabaseServiceClient();
+  const { user, supabase } = await verifyAdminAccess();
 
-  const diagnosisRepo = new SupabaseDiagnosisRepository(serviceClient);
+  const diagnosisRepo = new SupabaseDiagnosisRepository(supabase);
   return diagnosisRepo.markReviewed(diagnosisId, user.id);
 }
 
 export async function getPendingFulfillments(): Promise<(FulfillmentRequest & { userName: string; userEmail: string })[]> {
-  await verifyAdminAccess();
-  const serviceClient = getSupabaseServiceClient();
+  const { supabase } = await verifyAdminAccess();
 
-  const fulfillmentRepo = new SupabaseFulfillmentRepository(serviceClient);
-  const userRepo = new SupabaseUserRepository(serviceClient);
+  const fulfillmentRepo = new SupabaseFulfillmentRepository(supabase);
+  const userRepo = new SupabaseUserRepository(supabase);
 
   const pending = await fulfillmentRepo.findPending();
   const results = [];
@@ -174,26 +170,23 @@ export async function getPendingFulfillments(): Promise<(FulfillmentRequest & { 
 }
 
 export async function assignFulfillment(fulfillmentId: string): Promise<FulfillmentRequest> {
-  const { user } = await verifyAdminAccess();
-  const serviceClient = getSupabaseServiceClient();
+  const { user, supabase } = await verifyAdminAccess();
 
-  const fulfillmentRepo = new SupabaseFulfillmentRepository(serviceClient);
+  const fulfillmentRepo = new SupabaseFulfillmentRepository(supabase);
   return fulfillmentRepo.assign(fulfillmentId, user.id);
 }
 
 export async function completeFulfillment(fulfillmentId: string): Promise<FulfillmentRequest> {
-  await verifyAdminAccess();
-  const serviceClient = getSupabaseServiceClient();
+  const { supabase } = await verifyAdminAccess();
 
-  const fulfillmentRepo = new SupabaseFulfillmentRepository(serviceClient);
+  const fulfillmentRepo = new SupabaseFulfillmentRepository(supabase);
   return fulfillmentRepo.markCompleted(fulfillmentId);
 }
 
 export async function addFulfillmentNotes(fulfillmentId: string, notes: string): Promise<FulfillmentRequest> {
-  await verifyAdminAccess();
-  const serviceClient = getSupabaseServiceClient();
+  const { supabase } = await verifyAdminAccess();
 
-  const fulfillmentRepo = new SupabaseFulfillmentRepository(serviceClient);
+  const fulfillmentRepo = new SupabaseFulfillmentRepository(supabase);
   return fulfillmentRepo.addNotes(fulfillmentId, notes);
 }
 
@@ -204,25 +197,22 @@ import { SupabaseNotificationRepository } from '@infrastructure/repositories';
 
 export async function getAdminNotifications(limit = 20): Promise<AdminNotification[]> {
   const { user, supabase } = await verifyAdminAccess();
-  const serviceClient = getSupabaseServiceClient();
 
-  const notificationRepo = new SupabaseNotificationRepository(serviceClient);
+  const notificationRepo = new SupabaseNotificationRepository(supabase);
   return notificationRepo.findByRecipientId(user.id, limit);
 }
 
 export async function getUnreadNotificationCount(): Promise<number> {
-  const { user } = await verifyAdminAccess();
-  const serviceClient = getSupabaseServiceClient();
+  const { user, supabase } = await verifyAdminAccess();
 
-  const notificationRepo = new SupabaseNotificationRepository(serviceClient);
+  const notificationRepo = new SupabaseNotificationRepository(supabase);
   return notificationRepo.countUnreadByRecipientId(user.id);
 }
 
 export async function markNotificationAsRead(notificationId: string): Promise<AdminNotification> {
-  const { user } = await verifyAdminAccess();
-  const serviceClient = getSupabaseServiceClient();
+  const { user, supabase } = await verifyAdminAccess();
 
-  const notificationRepo = new SupabaseNotificationRepository(serviceClient);
+  const notificationRepo = new SupabaseNotificationRepository(supabase);
   const notification = await notificationRepo.findById(notificationId);
 
   if (!notification) {
@@ -237,10 +227,9 @@ export async function markNotificationAsRead(notificationId: string): Promise<Ad
 }
 
 export async function markAllNotificationsAsRead(): Promise<void> {
-  const { user } = await verifyAdminAccess();
-  const serviceClient = getSupabaseServiceClient();
+  const { user, supabase } = await verifyAdminAccess();
 
-  const notificationRepo = new SupabaseNotificationRepository(serviceClient);
+  const notificationRepo = new SupabaseNotificationRepository(supabase);
   const unread = await notificationRepo.findUnreadByRecipientId(user.id);
 
   for (const notification of unread) {
@@ -263,10 +252,9 @@ export interface UserListItem {
 }
 
 export async function getAllUsers(): Promise<UserListItem[]> {
-  await verifySystemAdminAccess();
-  const serviceClient = getSupabaseServiceClient();
+  const { supabase } = await verifySystemAdminAccess();
 
-  const userRepo = new SupabaseUserRepository(serviceClient);
+  const userRepo = new SupabaseUserRepository(supabase);
   const users = await userRepo.findAll(200);
 
   return users.map((u) => ({
@@ -281,27 +269,25 @@ export async function getAllUsers(): Promise<UserListItem[]> {
 }
 
 export async function updateUserRole(userId: string, newRole: UserRole): Promise<User> {
-  const { dbUser } = await verifySystemAdminAccess();
-  const serviceClient = getSupabaseServiceClient();
+  const { dbUser, supabase } = await verifySystemAdminAccess();
 
   // Prevent self-demotion
   if (dbUser.id === userId && newRole !== 'SYSTEM_ADMIN') {
     throw new Error('Cannot demote yourself');
   }
 
-  const userRepo = new SupabaseUserRepository(serviceClient);
+  const userRepo = new SupabaseUserRepository(supabase);
   return userRepo.updateRole(userId, newRole);
 }
 
 export async function deactivateUser(userId: string): Promise<void> {
-  const { dbUser } = await verifySystemAdminAccess();
-  const serviceClient = getSupabaseServiceClient();
+  const { dbUser, supabase } = await verifySystemAdminAccess();
 
   // Prevent self-deactivation
   if (dbUser.id === userId) {
     throw new Error('Cannot deactivate yourself');
   }
 
-  const userRepo = new SupabaseUserRepository(serviceClient);
+  const userRepo = new SupabaseUserRepository(supabase);
   await userRepo.deactivate(userId);
 }
