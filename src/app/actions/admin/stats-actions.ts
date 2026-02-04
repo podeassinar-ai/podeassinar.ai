@@ -5,6 +5,9 @@ import {
     SupabaseDiagnosisRepository,
     SupabaseFulfillmentRepository,
 } from '@infrastructure/repositories';
+import { HealthService, ServiceHealth, SystemHealthResult } from '@infrastructure/services/health-service';
+
+export type { ServiceHealth, SystemHealthResult };
 
 export interface AdminDashboardStats {
     pendingReviews: number;
@@ -159,4 +162,10 @@ export async function getRecentActivity(): Promise<DashboardActivityItem[]> {
     return activities
         .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
         .slice(0, 10);
+}
+
+export async function getSystemHealth(): Promise<SystemHealthResult> {
+    await verifyAdminAccess();
+    const healthService = new HealthService();
+    return healthService.checkAll();
 }

@@ -5,8 +5,10 @@ import Link from 'next/link';
 import {
   getAdminDashboardStats,
   getRecentActivity,
+  getSystemHealth,
   AdminDashboardStats,
-  DashboardActivityItem
+  DashboardActivityItem,
+  ServiceHealth
 } from '@app/actions/admin-actions';
 import { ActivityFeed } from '@/components/admin/activity-feed';
 import { SystemStatus } from '@/components/admin/system-status';
@@ -89,18 +91,23 @@ const Icons = {
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);
   const [activities, setActivities] = useState<DashboardActivityItem[]>([]);
+  const [healthServices, setHealthServices] = useState<ServiceHealth[]>([]);
+  const [systemOnline, setSystemOnline] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [statsData, activityData] = await Promise.all([
+        const [statsData, activityData, healthData] = await Promise.all([
           getAdminDashboardStats(),
-          getRecentActivity()
+          getRecentActivity(),
+          getSystemHealth()
         ]);
         setStats(statsData);
         setActivities(activityData);
+        setHealthServices(healthData.services);
+        setSystemOnline(healthData.overallStatus === 'operational');
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -142,9 +149,13 @@ export default function AdminDashboardPage() {
           <p className="text-slate-500 mt-1">Visão geral das operações jurídicas</p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-medium">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            Sistema On-line
+          <span className={`flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-medium ${systemOnline === null ? 'bg-slate-50 border-slate-200 text-slate-600' :
+              systemOnline ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-700'
+            }`}>
+            <span className={`w-2 h-2 rounded-full ${systemOnline === null ? 'bg-slate-400' :
+                systemOnline ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'
+              }`}></span>
+            {systemOnline === null ? 'Verificando...' : systemOnline ? 'Sistema On-line' : 'Problemas Detectados'}
           </span>
           <span className="text-slate-400 text-sm font-mono">
             v1.2-b
@@ -222,9 +233,9 @@ export default function AdminDashboardPage() {
           {/* System Status */}
           <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
             <h3 className="font-semibold text-slate-900 mb-4">Status do Sistema</h3>
-            <SystemStatus services={[
-              { name: 'IA Engine (LangChain)', status: 'operational', latency: '45ms' },
-              { name: 'Database (Supabase)', status: 'operational', latency: '12ms' },
+            <SystemStatus services={healthServices.length > 0 ? healthServices : [
+              { name: 'IA Engine (OpenAI)', status: 'operational' },
+              { name: 'Database (Supabase)', status: 'operational' },
               { name: 'Payment Gateway', status: 'operational' },
               { name: 'Storage', status: 'operational' },
             ]} />

@@ -7,13 +7,16 @@ import { SupabaseAuditService } from '@infrastructure/services/supabase-audit-se
 import {
   SupabaseTransactionRepository,
   SupabasePaymentRepository,
-  SupabaseUserRepository
+  SupabaseUserRepository,
+  SupabaseDiagnosisRepository
 } from '@infrastructure/repositories';
 import { createClient } from '@infrastructure/database/supabase-server';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { inngest } from '@/inngest';
 import { isSystemAdmin } from '@domain/entities/user';
+import { createDiagnosis } from '@domain/entities/diagnosis';
+import { v4 as uuidv4 } from 'uuid';
 
 export async function initiatePaymentAction(transactionId: string) {
   const supabase = await createClient();
@@ -33,6 +36,19 @@ export async function initiatePaymentAction(transactionId: string) {
   // ADMIN BYPASS: Skip payment gateway for admin users (for testing)
   if (userProfile && isSystemAdmin(userProfile)) {
     console.log('[ADMIN BYPASS] Skipping payment gateway, triggering document extraction and AI diagnosis.');
+
+    // Ensure diagnosis record exists (required for AI processing)
+    const diagnosisRepo = new SupabaseDiagnosisRepository(supabase);
+    const existingDiagnosis = await diagnosisRepo.findByTransactionId(transactionId);
+
+    if (!existingDiagnosis) {
+      console.log('[ADMIN BYPASS] Creating missing diagnosis record...');
+      const newDiagnosis = createDiagnosis({
+        id: uuidv4(),
+        transactionId,
+      });
+      await diagnosisRepo.create(newDiagnosis);
+    }
 
     // Update transaction status to PROCESSING
     await transactionRepo.updateStatus(transactionId, 'PROCESSING');
