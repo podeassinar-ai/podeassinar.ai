@@ -21,7 +21,16 @@ export type DocumentExtractionRequestedEvent = {
   };
 };
 
+export type DocumentsExtractionBatchRequestedEvent = {
+  name: 'documents/extraction-batch-requested';
+  data: {
+    transactionId: string;
+    userId: string;
+  };
+};
+
 export type InngestEvents =
   | DiagnosisGenerateRequestedEvent
-  | DocumentExtractionRequestedEvent;
+  | DocumentExtractionRequestedEvent
+  | DocumentsExtractionBatchRequestedEvent;
 

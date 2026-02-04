@@ -17,14 +17,14 @@ export async function POST(req: NextRequest) {
 
     const supabase = getSupabaseServiceClient();
     const paymentGateway = new AbacatePayGateway();
-    
+
     const isValid = paymentGateway.verifyWebhookSignature(payload, signature);
     if (!isValid) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
     }
 
     const event = paymentGateway.parseWebhookEvent(payload);
-    
+
     const paymentRepo = new SupabasePaymentRepository(supabase);
     const transactionRepo = new SupabaseTransactionRepository(supabase);
     const auditService = new SupabaseAuditService();
@@ -44,8 +44,9 @@ export async function POST(req: NextRequest) {
     if (event.type === 'billing.paid') {
       const payment = await paymentRepo.findById(event.metadata.paymentId);
       if (payment) {
+        // Trigger batch document extraction, which will then trigger diagnosis
         await inngest.send({
-          name: 'diagnosis/generate-requested',
+          name: 'documents/extraction-batch-requested',
           data: {
             userId: payment.userId,
             transactionId: payment.transactionId,

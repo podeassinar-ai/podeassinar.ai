@@ -74,6 +74,74 @@ export const extractDocumentText = inngest.createFunction(
   }
 );
 
+export const extractAllDocuments = inngest.createFunction(
+  {
+    id: 'extract-all-documents',
+    retries: 1,
+  },
+  { event: 'documents/extraction-batch-requested' },
+  async ({ event, step }) => {
+    const { transactionId, userId } = event.data;
+
+    // Step 1: Get all documents for this transaction
+    const documents = await step.run('fetch-documents', async () => {
+      const supabase = getSupabaseServiceClient();
+      const documentRepo = new SupabaseDocumentRepository(supabase);
+      return documentRepo.findByTransactionId(transactionId);
+    });
+
+    // Step 2: Extract each document (sequentially to avoid overwhelming resources)
+    const results: Array<{ documentId: string; success: boolean; error?: string }> = [];
+
+    for (const doc of documents) {
+      // Skip if already extracted
+      if (doc.extractedData && typeof doc.extractedData.text === 'string') {
+        results.push({ documentId: doc.id, success: true });
+        continue;
+      }
+
+      const extractionResult = await step.run(`extract-doc-${doc.id}`, async () => {
+        const supabase = getSupabaseServiceClient();
+        const documentRepo = new SupabaseDocumentRepository(supabase);
+        const storageService = new SupabaseStorageService();
+        const documentExtractor = new PythonDocumentExtractor();
+        const auditService = new SupabaseAuditService();
+
+        const useCase = new ExtractDocumentTextUseCase(
+          documentRepo,
+          storageService,
+          documentExtractor,
+          auditService
+        );
+
+        try {
+          const result = await useCase.execute({ documentId: doc.id, userId });
+          return { documentId: doc.id, success: result.success, error: result.error };
+        } catch (err: any) {
+          return { documentId: doc.id, success: false, error: err.message };
+        }
+      });
+
+      results.push(extractionResult);
+    }
+
+    // Step 3: Trigger the AI diagnosis generation
+    await step.sendEvent('trigger-diagnosis', {
+      name: 'diagnosis/generate-requested',
+      data: {
+        userId,
+        transactionId,
+      },
+    });
+
+    return {
+      transactionId,
+      documentsProcessed: results.length,
+      results,
+    };
+  }
+);
+
 export const generateDiagnosis = inngest.createFunction(
   {
     id: 'generate-ai-diagnosis',
@@ -117,5 +185,6 @@ export const generateDiagnosis = inngest.createFunction(
   }
 );
 
-export const inngestFunctions = [extractDocumentText, generateDiagnosis];
+export const inngestFunctions = [extractDocumentText, extractAllDocuments, generateDiagnosis];
+
 

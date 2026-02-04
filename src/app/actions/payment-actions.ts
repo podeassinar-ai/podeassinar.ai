@@ -32,14 +32,14 @@ export async function initiatePaymentAction(transactionId: string) {
 
   // ADMIN BYPASS: Skip payment gateway for admin users (for testing)
   if (userProfile && isSystemAdmin(userProfile)) {
-    console.log('[ADMIN BYPASS] Skipping payment gateway, triggering AI diagnosis directly.');
+    console.log('[ADMIN BYPASS] Skipping payment gateway, triggering document extraction and AI diagnosis.');
 
     // Update transaction status to PROCESSING
     await transactionRepo.updateStatus(transactionId, 'PROCESSING');
 
-    // Trigger the AI diagnosis generation via Inngest
+    // Trigger batch document extraction, which will then trigger AI diagnosis
     await inngest.send({
-      name: 'diagnosis/generate-requested',
+      name: 'documents/extraction-batch-requested',
       data: {
         userId: user.id,
         transactionId: transactionId,
@@ -49,6 +49,7 @@ export async function initiatePaymentAction(transactionId: string) {
     // Redirect to meus-diagnosticos
     redirect(`${process.env.NEXT_PUBLIC_APP_URL}/meus-diagnosticos`);
   }
+
 
   // Production flow: initiate payment via gateway
   const paymentRepo = new SupabasePaymentRepository(supabase);
