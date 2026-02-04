@@ -4,25 +4,32 @@ import {
   AIAnalysisResult,
 } from '@domain/interfaces/ai-service';
 import { RiskLevel } from '@domain/entities/diagnosis';
+import { AIReasoningTier } from '@domain/types/ai-reasoning';
 import { v4 as uuidv4 } from 'uuid';
 
 interface OpenAIConfig {
   apiKey: string;
-  model?: string;
   maxRetries?: number;
   retryDelayMs?: number;
 }
 
+/**
+ * Model Resolution Engine: Maps reasoning tiers to OpenAI model IDs.
+ * This is the ONLY place model names are hardcoded.
+ */
+const TIER_MODEL_MAP: Record<AIReasoningTier, string> = {
+  DIAGNOSTIC: 'gpt-4o-mini', // Cost-effective, structured legal analysis
+  DEEP_LEGAL: 'gpt-4o',       // Full flagship model for complex cases
+};
+
 export class OpenAIService implements IAIService {
   private apiKey: string;
-  private model: string;
   private maxRetries: number;
   private retryDelayMs: number;
   private baseUrl = 'https://api.openai.com/v1';
 
   constructor(config?: Partial<OpenAIConfig>) {
     this.apiKey = config?.apiKey ?? process.env.OPENAI_API_KEY ?? '';
-    this.model = config?.model ?? 'gpt-4o';
     this.maxRetries = config?.maxRetries ?? 3;
     this.retryDelayMs = config?.retryDelayMs ?? 1000;
 
@@ -31,12 +38,26 @@ export class OpenAIService implements IAIService {
     }
   }
 
+  /**
+   * Resolves the OpenAI model ID for a given reasoning tier.
+   * Supports AI_MODEL_OVERRIDE for emergencies/experiments.
+   */
+  private resolveModel(tier: AIReasoningTier): string {
+    const override = process.env.AI_MODEL_OVERRIDE;
+    if (override) {
+      console.log(`[AI] Using model override: ${override}`);
+      return override;
+    }
+    return TIER_MODEL_MAP[tier];
+  }
+
   private async sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   private async callOpenAI(
     messages: Array<{ role: string; content: string }>,
+    model: string,
     attempt = 1
   ): Promise<string> {
     try {
@@ -47,7 +68,7 @@ export class OpenAIService implements IAIService {
           Authorization: `Bearer ${this.apiKey}`,
         },
         body: JSON.stringify({
-          model: this.model,
+          model,
           messages,
           temperature: 0.3,
           response_format: { type: 'json_object' },
@@ -68,13 +89,18 @@ export class OpenAIService implements IAIService {
       if (error.message?.startsWith('RETRYABLE:') && attempt < this.maxRetries) {
         const delay = this.retryDelayMs * Math.pow(2, attempt - 1);
         await this.sleep(delay);
-        return this.callOpenAI(messages, attempt + 1);
+        return this.callOpenAI(messages, model, attempt + 1);
       }
       throw error;
     }
   }
 
   async analyzeForDiagnosis(input: AIAnalysisInput): Promise<AIAnalysisResult> {
+    const tier: AIReasoningTier = input.tier ?? 'DIAGNOSTIC';
+    const model = this.resolveModel(tier);
+
+    console.log(`[AI] Analyzing with tier=${tier}, model=${model}`);
+
     const systemPrompt = `Você é um assistente jurídico especializado em análise de transações imobiliárias no Brasil.
 Analise os dados fornecidos e produza um diagnóstico jurídico estruturado.
 
@@ -110,7 +136,7 @@ Responda SEMPRE em JSON com a seguinte estrutura:
       { role: 'user', content: userContent },
     ];
 
-    const responseText = await this.callOpenAI(messages);
+    const responseText = await this.callOpenAI(messages, model);
     const parsed = JSON.parse(responseText);
 
     return {
@@ -134,8 +160,14 @@ Responda SEMPRE em JSON com a seguinte estrutura:
       })),
       summary: parsed.summary || '',
       confidence: Math.min(1, Math.max(0, parsed.confidence || 0.7)),
+      metadata: {
+        tierUsed: tier,
+        modelUsed: model,
+        analyzedAt: new Date(),
+      },
     };
   }
+
 
   private formatInputForAnalysis(input: AIAnalysisInput): string {
     const parts: string[] = [];
@@ -192,7 +224,7 @@ Responda SEMPRE em JSON com a seguinte estrutura:
           }),
         },
       ];
-      const response = await this.callOpenAI(messages as any);
+      const response = await this.callOpenAI(messages as any, TIER_MODEL_MAP.DIAGNOSTIC);
       return JSON.parse(response);
     }
 
@@ -220,7 +252,7 @@ Responda apenas com o nome da categoria.`,
       { role: 'user', content: userMessage },
     ];
 
-    const response = await this.callOpenAI(messages);
+    const response = await this.callOpenAI(messages, TIER_MODEL_MAP.DIAGNOSTIC);
     return response.trim().toUpperCase();
   }
 }
