@@ -3,12 +3,8 @@ import { IPaymentRepository } from '@domain/interfaces/payment-repository';
 import { IPaymentGateway } from '@domain/interfaces/payment-gateway';
 import { IUserRepository } from '@domain/interfaces/user-repository';
 import { createPayment, Payment } from '@domain/entities/payment';
+import { PRICES } from '@domain/constants/prices';
 import { v4 as uuidv4 } from 'uuid';
-
-const DIAGNOSTIC_PRICE = {
-  amount: 30000,
-  currency: 'BRL',
-};
 
 export interface InitiatePaymentInput {
   userId: string;
@@ -28,7 +24,7 @@ export class InitiatePaymentUseCase {
     private paymentRepository: IPaymentRepository,
     private userRepository: IUserRepository,
     private paymentGateway: IPaymentGateway
-  ) {}
+  ) { }
 
   async execute(input: InitiatePaymentInput): Promise<InitiatePaymentOutput> {
     const transaction = await this.transactionRepository.findById(input.transactionId);
@@ -68,15 +64,15 @@ export class InitiatePaymentUseCase {
       transactionId: input.transactionId,
       userId: input.userId,
       type: 'DIAGNOSTIC',
-      amount: DIAGNOSTIC_PRICE.amount,
-      currency: DIAGNOSTIC_PRICE.currency,
+      amount: PRICES.DIAGNOSTIC.amount,
+      currency: PRICES.DIAGNOSTIC.currency,
     });
 
     const savedPayment = await this.paymentRepository.create(payment);
 
     const checkoutResult = await this.paymentGateway.createCheckout({
-      amount: DIAGNOSTIC_PRICE.amount,
-      currency: DIAGNOSTIC_PRICE.currency,
+      amount: PRICES.DIAGNOSTIC.amount,
+      currency: PRICES.DIAGNOSTIC.currency,
       description: 'Diagnóstico Jurídico Imobiliário - PodeAssinar.ai',
       metadata: {
         paymentId: savedPayment.id,

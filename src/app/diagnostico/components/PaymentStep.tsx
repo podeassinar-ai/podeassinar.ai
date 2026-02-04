@@ -4,6 +4,7 @@ import { Card, Button } from '@ui/components/common';
 import { checkSubscriptionCreditsAction, consumeSubscriptionCreditAction } from '../../actions/subscription-actions';
 import { mapGenericError } from '@/utils/error-mapping';
 import { PaymentStepProps } from '../types';
+import { PRICES, formatPriceSimple } from '@/domain/constants/prices';
 
 export function PaymentStep({ transactionId, matriculaOption, loading, onPaymentClick, addToast }: PaymentStepProps) {
     const router = useRouter();
@@ -112,7 +113,7 @@ export function PaymentStep({ transactionId, matriculaOption, loading, onPayment
                                 <span className="block font-medium text-text-primary">Due Diligence Imobiliária</span>
                                 <span className="text-sm text-text-muted">Análise IA + Relatório + Validação</span>
                             </div>
-                            <span className="font-semibold text-text-primary font-mono">R$ 300,00</span>
+                            <span className="font-semibold text-text-primary font-mono">R$ {formatPriceSimple(PRICES.DIAGNOSTIC.amount)}</span>
                         </div>
 
                         {matriculaOption === 'solicitar' && (
@@ -121,14 +122,14 @@ export function PaymentStep({ transactionId, matriculaOption, loading, onPayment
                                     <span className="block font-medium text-text-primary">Serviço de Busca de Certidão</span>
                                     <span className="text-sm text-text-muted">Taxas cartorárias + Emissão digital</span>
                                 </div>
-                                <span className="font-semibold text-text-primary font-mono">R$ 50,00</span>
+                                <span className="font-semibold text-text-primary font-mono">R$ {formatPriceSimple(PRICES.CERTIFICATE_SEARCH.amount)}</span>
                             </div>
                         )}
 
                         <div className="flex justify-between items-center pt-2">
                             <span className="font-bold text-lg text-primary">Total</span>
                             <span className="font-bold text-2xl text-primary font-mono">
-                                R$ {matriculaOption === 'solicitar' ? '350,00' : '300,00'}
+                                R$ {formatPriceSimple(matriculaOption === 'solicitar' ? PRICES.DIAGNOSTIC.amount + PRICES.CERTIFICATE_SEARCH.amount : PRICES.DIAGNOSTIC.amount)}
                             </span>
                         </div>
                     </div>
