@@ -6,7 +6,9 @@ import { DetailedDiagnosisItem, updateDiagnosis, approveDiagnosis } from '@app/a
 import { Document } from '@domain/entities/document';
 import { RiskItem, LegalPathway } from '@domain/entities/diagnosis';
 
-
+import { DocumentViewer } from '@ui/components/admin/DocumentViewer';
+import { RiskEditorItem } from '@ui/components/admin/RiskEditorItem';
+import { PathwayEditorItem } from '@ui/components/admin/PathwayEditorItem';
 
 export default function ReviewControlRoom({ data }: { data: DetailedDiagnosisItem }) {
     const router = useRouter();
@@ -40,55 +42,34 @@ export default function ReviewControlRoom({ data }: { data: DetailedDiagnosisIte
         }
     }
 
-    const getDocTypeLabel = (type: string) => {
-        return type;
-    };
+    function handleRiskUpdate(index: number, updates: Partial<RiskItem>) {
+        const newRisks = [...risks];
+        newRisks[index] = { ...newRisks[index], ...updates };
+        setRisks(newRisks);
+    }
+
+    function handleRiskRemove(index: number) {
+        setRisks(risks.filter((_, i) => i !== index));
+    }
+
+    function handleAddRisk() {
+        setRisks([...risks, { id: crypto.randomUUID(), level: 'MEDIUM', category: 'OUTROS', description: '', recommendation: '' }]);
+    }
+
+    function handlePathwayUpdate(index: number, updates: Partial<LegalPathway>) {
+        const newPaths = [...pathways];
+        newPaths[index] = { ...newPaths[index], ...updates };
+        setPathways(newPaths);
+    }
 
     return (
         <div className="flex h-[calc(100vh-100px)] overflow-hidden gap-6">
             {/* LEFT PANE: Documents */}
-            <div className="w-1/2 flex flex-col bg-slate-100 border border-slate-200 rounded-xl overflow-hidden shadow-inner">
-                <div className="flex items-center gap-2 p-2 border-b border-slate-200 bg-white overflow-x-auto">
-                    {data.documents.map((doc) => (
-                        <button
-                            key={doc.id}
-                            onClick={() => setActiveDoc(doc)}
-                            className={`
-                                px-3 py-2 text-xs font-bold rounded-lg whitespace-nowrap transition-colors
-                                ${activeDoc?.id === doc.id
-                                    ? 'bg-orange-50 text-orange-600 border border-orange-100 shadow-sm'
-                                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
-                                }
-                            `}
-                        >
-                            {getDocTypeLabel(doc.type) || doc.fileName}
-                        </button>
-                    ))}
-                    {data.documents.length === 0 && (
-                        <span className="p-3 text-sm text-slate-500">Nenhum documento anexado.</span>
-                    )}
-                </div>
-
-                <div className="flex-1 bg-slate-200 relative flex items-center justify-center p-4">
-                    {activeDoc ? (
-                        activeDoc.mimeType === 'application/pdf' ? (
-                            <iframe
-                                src={activeDoc.signedUrl}
-                                className="w-full h-full border-0 rounded-lg shadow-sm bg-white"
-                                title="Document Viewer"
-                            />
-                        ) : (
-                            <div className="flex items-center justify-center h-full w-full bg-white rounded-lg shadow-sm overflow-hidden">
-                                <img src={activeDoc.signedUrl} alt="Document" className="max-w-full max-h-full object-contain" />
-                            </div>
-                        )
-                    ) : (
-                        <div className="text-slate-500 font-medium">
-                            Selecione um documento pare visualizar
-                        </div>
-                    )}
-                </div>
-            </div>
+            <DocumentViewer
+                documents={data.documents}
+                activeDoc={activeDoc}
+                setActiveDoc={setActiveDoc}
+            />
 
             {/* RIGHT PANE: Analysis Editor */}
             <div className="w-1/2 flex flex-col bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xl">
@@ -144,7 +125,7 @@ export default function ReviewControlRoom({ data }: { data: DetailedDiagnosisIte
                         <div className="flex justify-between items-center mb-4 px-1">
                             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Riscos Identificados</h3>
                             <button
-                                onClick={() => setRisks([...risks, { id: crypto.randomUUID(), level: 'MEDIUM', category: 'OUTROS', description: '', recommendation: '' }])}
+                                onClick={handleAddRisk}
                                 className="text-xs font-bold text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-lg transition-colors"
                             >
                                 + Adicionar Risco
@@ -153,66 +134,13 @@ export default function ReviewControlRoom({ data }: { data: DetailedDiagnosisIte
 
                         <div className="space-y-4">
                             {risks.map((risk, idx) => (
-                                <div key={idx} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative group">
-                                    <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-xl ${risk.level === 'CRITICAL' ? 'bg-red-500' :
-                                        risk.level === 'HIGH' ? 'bg-orange-500' :
-                                            risk.level === 'MEDIUM' ? 'bg-amber-500' : 'bg-emerald-500'
-                                        }`}></div>
-
-                                    <div className="flex justify-between items-start mb-3 pl-3">
-                                        <select
-                                            value={risk.level}
-                                            onChange={(e) => {
-                                                const newRisks = [...risks];
-                                                newRisks[idx].level = e.target.value as any;
-                                                setRisks(newRisks);
-                                            }}
-                                            className="bg-slate-50 border border-slate-200 text-xs font-bold rounded-lg px-2 py-1 text-slate-700 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 cursor-pointer"
-                                        >
-                                            <option value="LOW">Risco Baixo</option>
-                                            <option value="MEDIUM">Risco Médio</option>
-                                            <option value="HIGH">Risco Alto</option>
-                                            <option value="CRITICAL">Crítico</option>
-                                        </select>
-                                        <button
-                                            onClick={() => setRisks(risks.filter((_, i) => i !== idx))}
-                                            className="text-slate-400 hover:text-red-500 p-1 rounded hover:bg-red-50 transition-colors"
-                                        >
-                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                        </button>
-                                    </div>
-
-                                    <div className="pl-3 space-y-3">
-                                        <input
-                                            value={risk.description}
-                                            onChange={(e) => {
-                                                const newRisks = [...risks];
-                                                newRisks[idx].description = e.target.value;
-                                                setRisks(newRisks);
-                                            }}
-                                            className="w-full bg-transparent border-0 border-b-2 border-slate-100 text-sm font-semibold text-slate-800 focus:border-orange-500 focus:ring-0 px-0 py-1 transition-colors"
-                                            placeholder="Descrição do risco"
-                                        />
-                                        <div className="flex items-start gap-2">
-                                            <svg className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                            </svg>
-                                            <textarea
-                                                value={risk.recommendation}
-                                                onChange={(e) => {
-                                                    const newRisks = [...risks];
-                                                    newRisks[idx].recommendation = e.target.value;
-                                                    setRisks(newRisks);
-                                                }}
-                                                className="w-full bg-transparent text-xs text-slate-600 focus:text-slate-900 placeholder-slate-400 focus:outline-none resize-none h-auto min-h-[40px]"
-                                                placeholder="Recomendação de mitigação..."
-                                                rows={2}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
+                                <RiskEditorItem
+                                    key={idx}
+                                    risk={risk}
+                                    index={idx}
+                                    onUpdate={handleRiskUpdate}
+                                    onRemove={handleRiskRemove}
+                                />
                             ))}
                             {risks.length === 0 && (
                                 <div className="text-center py-8 bg-slate-100/50 rounded-xl border border-dashed border-slate-300">
@@ -227,29 +155,12 @@ export default function ReviewControlRoom({ data }: { data: DetailedDiagnosisIte
                         <h3 className="text-xs font-bold text-slate-500 mb-4 px-1 uppercase tracking-widest">Caminhos Jurídicos</h3>
                         <div className="space-y-4">
                             {pathways.map((path, idx) => (
-                                <div key={idx} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm relative pl-6">
-                                    <div className="absolute left-0 top-0 bottom-0 w-2 bg-indigo-500 rounded-l-xl opacity-20"></div>
-                                    <input
-                                        value={path.title}
-                                        onChange={(e) => {
-                                            const newPaths = [...pathways];
-                                            newPaths[idx].title = e.target.value;
-                                            setPathways(newPaths);
-                                        }}
-                                        className="w-full bg-transparent font-bold text-slate-800 mb-2 focus:outline-none focus:text-indigo-700 text-sm"
-                                        placeholder="Título do caminho"
-                                    />
-                                    <textarea
-                                        value={path.description}
-                                        onChange={(e) => {
-                                            const newPaths = [...pathways];
-                                            newPaths[idx].description = e.target.value;
-                                            setPathways(newPaths);
-                                        }}
-                                        className="w-full bg-transparent text-sm text-slate-600 focus:text-slate-900 h-16 resize-none focus:outline-none leading-relaxed"
-                                        placeholder="Descrição detalhada..."
-                                    />
-                                </div>
+                                <PathwayEditorItem
+                                    key={idx}
+                                    pathway={path}
+                                    index={idx}
+                                    onUpdate={handlePathwayUpdate}
+                                />
                             ))}
                         </div>
                     </section>
