@@ -18,7 +18,7 @@ interface OpenAIConfig {
  * This is the ONLY place model names are hardcoded.
  */
 const TIER_MODEL_MAP: Record<AIReasoningTier, string> = {
-  DIAGNOSTIC: 'gpt-4o-mini', // Cost-effective, structured legal analysis
+  DIAGNOSTIC: 'gpt-5-mini', // Cost-effective, structured legal analysis
   DEEP_LEGAL: 'gpt-4o',       // Full flagship model for complex cases
 };
 
