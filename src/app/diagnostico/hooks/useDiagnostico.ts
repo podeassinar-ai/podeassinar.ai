@@ -182,7 +182,15 @@ export function useDiagnostico() {
         setLoading(true);
         try {
             await initiatePaymentAction(transactionId);
+            // In dev mode, the action triggers diagnosis and redirects.
+            // If no redirect occurred (unlikely), show success and redirect manually.
+            addToast('Diagnóstico iniciado com sucesso!', 'success');
+            window.location.href = '/meus-diagnosticos';
         } catch (err: any) {
+            // Next.js redirect throws an error, so we need to check for it
+            if (err?.digest?.startsWith('NEXT_REDIRECT')) {
+                return; // Redirect is happening, do nothing
+            }
             console.error(err);
             addToast('Erro ao iniciar pagamento: ' + mapGenericError(err.message), 'error');
         } finally {

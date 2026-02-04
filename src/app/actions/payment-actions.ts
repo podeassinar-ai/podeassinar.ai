@@ -12,6 +12,8 @@ import {
 import { createClient } from '@infrastructure/database/supabase-server';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import { inngest } from '@/inngest';
+import { isSystemAdmin } from '@domain/entities/user';
 
 export async function initiatePaymentAction(transactionId: string) {
   const supabase = await createClient();
@@ -23,8 +25,33 @@ export async function initiatePaymentAction(transactionId: string) {
   }
 
   const transactionRepo = new SupabaseTransactionRepository(supabase);
-  const paymentRepo = new SupabasePaymentRepository(supabase);
   const userRepo = new SupabaseUserRepository(supabase);
+
+  // Get user profile to check role
+  const userProfile = await userRepo.findById(user.id);
+
+  // ADMIN BYPASS: Skip payment gateway for admin users (for testing)
+  if (userProfile && isSystemAdmin(userProfile)) {
+    console.log('[ADMIN BYPASS] Skipping payment gateway, triggering AI diagnosis directly.');
+
+    // Update transaction status to PROCESSING
+    await transactionRepo.updateStatus(transactionId, 'PROCESSING');
+
+    // Trigger the AI diagnosis generation via Inngest
+    await inngest.send({
+      name: 'diagnosis/generate-requested',
+      data: {
+        userId: user.id,
+        transactionId: transactionId,
+      },
+    });
+
+    // Redirect to meus-diagnosticos
+    redirect(`${process.env.NEXT_PUBLIC_APP_URL}/meus-diagnosticos`);
+  }
+
+  // Production flow: initiate payment via gateway
+  const paymentRepo = new SupabasePaymentRepository(supabase);
   const paymentGateway = new AbacatePayGateway();
 
   const useCase = new InitiatePaymentUseCase(
