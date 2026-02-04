@@ -3,14 +3,18 @@ import { getSupabaseServiceClient } from '@infrastructure/database/supabase-clie
 import {
   SupabaseDiagnosisRepository,
   SupabaseTransactionRepository,
+  SupabaseUserRepository,
+  SupabaseNotificationRepository,
 } from '@infrastructure/repositories';
 import { SupabaseDocumentRepository } from '@infrastructure/repositories/supabase-document-repository';
 import { OpenAIService } from '@infrastructure/services/openai-service';
 import { SupabaseAuditService } from '@infrastructure/services/supabase-audit-service';
 import { SupabaseStorageService } from '@infrastructure/services/supabase-storage-service';
+import { ResendEmailService } from '@infrastructure/services/email-service';
 import { PythonDocumentExtractor } from '@infrastructure/services/extraction';
 import { GenerateAIDiagnosisUseCase } from '@application/use-cases/generate-ai-diagnosis';
 import { ExtractDocumentTextUseCase } from '@application/use-cases/extract-document-text';
+import { NotificationDispatcher } from '@application/services/notification-dispatcher';
 
 class QuestionnaireRepository {
   constructor(private supabase: ReturnType<typeof getSupabaseServiceClient>) { }
@@ -179,6 +183,32 @@ export const generateDiagnosis = inngest.createFunction(
 
       const diagnosis = await useCase.execute({ userId, transactionId });
       return { diagnosisId: diagnosis.id, status: diagnosis.status };
+    });
+
+    // Step 2: Notify admins/lawyers that a new diagnosis is ready for review
+    await step.run('notify-admins', async () => {
+      const supabase = getSupabaseServiceClient();
+      const diagnosisRepo = new SupabaseDiagnosisRepository(supabase);
+      const transactionRepo = new SupabaseTransactionRepository(supabase);
+      const userRepo = new SupabaseUserRepository(supabase);
+      const notificationRepo = new SupabaseNotificationRepository(supabase);
+      const emailService = new ResendEmailService();
+      const auditService = new SupabaseAuditService();
+
+      const diagnosis = await diagnosisRepo.findByTransactionId(transactionId);
+      const transaction = await transactionRepo.findById(transactionId);
+      const customer = await userRepo.findById(userId);
+
+      if (diagnosis && transaction && customer) {
+        const dispatcher = new NotificationDispatcher(
+          notificationRepo,
+          userRepo,
+          emailService,
+          auditService
+        );
+
+        await dispatcher.onDiagnosisGenerated(diagnosis, transaction, customer);
+      }
     });
 
     return result;

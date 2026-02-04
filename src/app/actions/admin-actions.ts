@@ -8,11 +8,15 @@ import {
   SupabaseFulfillmentRepository,
   SupabaseUserRepository,
   SupabaseDocumentRepository,
+  SupabaseNotificationRepository,
 } from '@infrastructure/repositories';
 import { LegalDiagnosis, RiskItem, LegalPathway } from '@domain/entities/diagnosis';
 import { Transaction } from '@domain/entities/transaction';
 import { FulfillmentRequest } from '@domain/entities/fulfillment-request';
 import { Document } from '@domain/entities/document';
+import { ResendEmailService } from '@infrastructure/services/email-service';
+import { SupabaseAuditService } from '@infrastructure/services/supabase-audit-service';
+import { NotificationDispatcher } from '@application/services/notification-dispatcher';
 
 async function verifyAdminAccess() {
   const supabase = await createClient();
@@ -147,8 +151,42 @@ export async function approveDiagnosis(diagnosisId: string): Promise<LegalDiagno
   const { user, supabase } = await verifyAdminAccess();
 
   const diagnosisRepo = new SupabaseDiagnosisRepository(supabase);
-  return diagnosisRepo.markReviewed(diagnosisId, user.id);
+  const transactionRepo = new SupabaseTransactionRepository(supabase);
+
+  // 1. Mark as reviewed (APPROVED)
+  const diagnosis = await diagnosisRepo.markReviewed(diagnosisId, user.id);
+
+  // 2. Update transaction status to COMPLETED
+  await transactionRepo.updateStatus(diagnosis.transactionId, 'COMPLETED');
+
+  // 3. Mark as delivered to the user
+  const finalDiagnosis = await diagnosisRepo.markDelivered(diagnosisId);
+
+  // 4. Notify the customer
+  try {
+    const userRepo = new SupabaseUserRepository(supabase);
+    const notificationRepo = new SupabaseNotificationRepository(supabase);
+    const emailService = new ResendEmailService();
+    const auditService = new SupabaseAuditService();
+    const transaction = await transactionRepo.findById(finalDiagnosis.transactionId);
+    const customer = await userRepo.findById(transaction?.userId || '');
+
+    if (transaction && customer) {
+      const dispatcher = new NotificationDispatcher(
+        notificationRepo,
+        userRepo,
+        emailService,
+        auditService
+      );
+      await dispatcher.onDiagnosisApproved(finalDiagnosis, transaction, customer);
+    }
+  } catch (error) {
+    console.error('Failed to notify customer after approval:', error);
+  }
+
+  return finalDiagnosis;
 }
+
 
 export async function getPendingFulfillments(): Promise<(FulfillmentRequest & { userName: string; userEmail: string })[]> {
   const { supabase } = await verifyAdminAccess();
@@ -195,7 +233,7 @@ export async function addFulfillmentNotes(fulfillmentId: string, notes: string):
 // ================== NOTIFICATION ACTIONS ==================
 
 import { AdminNotification } from '@domain/entities/admin-notification';
-import { SupabaseNotificationRepository } from '@infrastructure/repositories';
+
 
 export async function getAdminNotifications(limit = 20): Promise<AdminNotification[]> {
   const { user, supabase } = await verifyAdminAccess();

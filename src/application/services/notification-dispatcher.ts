@@ -51,6 +51,54 @@ export class NotificationDispatcher {
     }
 
     /**
+     * Called when a diagnosis is approved and delivered to the customer.
+     */
+    async onDiagnosisApproved(
+        diagnosis: LegalDiagnosis,
+        transaction: Transaction,
+        customer: User
+    ): Promise<void> {
+        try {
+            await this.emailService.send({
+                to: [{ email: customer.email, name: customer.name }],
+                subject: '[PodeAssinar] Sua análise jurídica está pronta!',
+                htmlBody: `
+          <!DOCTYPE html>
+          <html>
+          <body style="font-family: Arial, sans-serif; padding: 20px;">
+            <h2 style="color: #2563eb;">PodeAssinar.ai</h2>
+            <p>Olá <strong>${customer.name}</strong>,</p>
+            <p>Temos boas notícias! Sua análise jurídica para o imóvel em <strong>${transaction.propertyAddress || 'endereço informado'}</strong> foi finalizada e revisada por nossos especialistas.</p>
+            <p>Você já pode acessar o relatório detalhado em seu painel.</p>
+            <p style="margin-top: 20px;">
+              <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://podeassinar.ai'}/diagnostico/${transaction.id}" 
+                 style="background: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+                Ver Meu Diagnóstico
+              </a>
+            </p>
+            <hr style="margin-top: 30px; border: none; border-top: 1px solid #e5e7eb;" />
+            <p style="color: #6b7280; font-size: 12px;">
+              Este é um email automático do sistema PodeAssinar.ai
+            </p>
+          </body>
+          </html>
+        `,
+                textBody: `Olá ${customer.name}, sua análise jurídica está pronta! Acesse em: ${process.env.NEXT_PUBLIC_APP_URL || 'https://podeassinar.ai'}/diagnostico/${transaction.id}`,
+            });
+
+            await this.auditService.log({
+                userId: customer.id,
+                action: 'UPDATE',
+                resource: 'EMAIL_NOTIFICATION',
+                resourceId: diagnosis.id,
+                metadata: { type: 'DIAGNOSIS_DELIVERED', sent: true },
+            });
+        } catch (error) {
+            console.error(`Failed to send delivery email to ${customer.email}:`, error);
+        }
+    }
+
+    /**
      * Called when a fulfillment request is created (certificate request).
      */
     async onFulfillmentRequestCreated(
