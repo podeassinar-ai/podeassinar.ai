@@ -47,7 +47,7 @@ export async function initiatePaymentAction(transactionId: string) {
     });
 
     // Redirect to meus-diagnosticos
-    redirect(`${process.env.NEXT_PUBLIC_APP_URL}/meus-diagnosticos`);
+    redirect('/meus-diagnosticos');
   }
 
 
