@@ -2,6 +2,7 @@ import { Topbar } from '@ui/components/layout/topbar';
 import { MainContainer } from '@ui/components/layout/main-container';
 import { Alert } from '@ui/components/common';
 import { getUserDocumentsAction } from '../actions/document-actions';
+import { DownloadButton } from './components/download-button';
 
 const typeLabels: Record<string, string> = {
   MATRICULA: 'Certidão de Matrícula',
@@ -31,7 +32,7 @@ export default async function DocumentosPage() {
         subtitle="Central de documentos e arquivos enviados"
       >
         <Alert variant="info" className="mb-8">
-          <strong>Política de Segurança:</strong> Seus documentos são criptografados. 
+          <strong>Política de Segurança:</strong> Seus documentos são criptografados.
           Conforme a LGPD, certidões são retidas apenas pelo período necessário para a análise (máximo de 90 dias).
         </Alert>
 
@@ -64,15 +65,15 @@ export default async function DocumentosPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {documents.map((doc) => {
                   const status = statusStyles[doc.status] || statusStyles['UPLOADED'];
-                  
+
                   return (
                     <tr key={doc.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10 bg-gray-100 rounded flex items-center justify-center">
-                             <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                             </svg>
+                            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900">{doc.name}</div>
@@ -92,7 +93,7 @@ export default async function DocumentosPage() {
                         {new Date(doc.uploadedAt).toLocaleDateString('pt-BR')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button className="text-primary hover:text-primary-hover mr-4">Download</button>
+                        <DownloadButton documentId={doc.id} />
                       </td>
                     </tr>
                   );
