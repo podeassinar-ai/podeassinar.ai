@@ -158,9 +158,13 @@ export default async function MeusDiagnosticosPage() {
                             Continuar
                           </Button>
                         </Link>
-                      ) : ['PROCESSING', 'PENDING_REVIEW'].includes(diag.status) ? (
-                        <Button variant="secondary" size="sm" className="border-gray-300" disabled>
-                          Processando...
+                      ) : diag.status === 'PROCESSING' ? (
+                        <Button variant="secondary" size="sm" className="border-orange-300 text-orange-600" disabled>
+                          Analisando IA...
+                        </Button>
+                      ) : diag.status === 'PENDING_REVIEW' ? (
+                        <Button variant="secondary" size="sm" className="border-indigo-300 text-indigo-600" disabled>
+                          Aguardando Revisão
                         </Button>
                       ) : (
                         <Link href={`/diagnostico/${diag.id}`}>

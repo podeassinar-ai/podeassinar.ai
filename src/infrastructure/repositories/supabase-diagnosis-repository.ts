@@ -65,7 +65,7 @@ function toRow(
 export class SupabaseDiagnosisRepository implements IDiagnosisRepository {
   private tableName = 'diagnoses';
 
-  constructor(private supabase: SupabaseClient) {}
+  constructor(private supabase: SupabaseClient) { }
 
   async create(diagnosis: LegalDiagnosis): Promise<LegalDiagnosis> {
     const { data, error } = await this.supabase
@@ -205,7 +205,7 @@ export class SupabaseDiagnosisRepository implements IDiagnosisRepository {
     const { data, error } = await this.supabase
       .from(this.tableName)
       .select()
-      .eq('status', 'AI_GENERATED')
+      .in('status', ['DRAFT', 'AI_GENERATED'])
       .order('created_at', { ascending: true });
 
     if (error) throw new Error(`Failed to find pending reviews: ${error.message}`);

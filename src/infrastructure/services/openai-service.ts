@@ -18,8 +18,8 @@ interface OpenAIConfig {
  * This is the ONLY place model names are hardcoded.
  */
 const TIER_MODEL_MAP: Record<AIReasoningTier, string> = {
-  DIAGNOSTIC: 'gpt-5-mini', // Cost-effective, structured legal analysis
-  DEEP_LEGAL: 'gpt-4o',       // Full flagship model for complex cases
+  DIAGNOSTIC: 'gpt-5-mini-2025-08-07', // Cost-effective, structured legal analysis
+  DEEP_LEGAL: 'gpt-5.2-2025-12-11',       // Full flagship model for complex cases
 };
 
 export class OpenAIService implements IAIService {
@@ -73,6 +73,7 @@ export class OpenAIService implements IAIService {
           temperature: 0.3,
           response_format: { type: 'json_object' },
         }),
+        signal: AbortSignal.timeout(30000), // 30 second timeout
       });
 
       if (!response.ok) {
