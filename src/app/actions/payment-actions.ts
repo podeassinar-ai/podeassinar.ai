@@ -2,6 +2,7 @@
 
 import { InitiatePaymentUseCase } from '@application/use-cases/initiate-payment';
 import { SyncPaymentStatusUseCase } from '@application/use-cases/sync-payment-status';
+import { PostPaymentProcessingService } from '@application/services/post-payment-processing';
 import { AbacatePayGateway } from '@infrastructure/services/abacate-pay-gateway';
 import { SupabaseAuditService } from '@infrastructure/services/supabase-audit-service';
 import {
@@ -15,8 +16,29 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { inngest } from '@/inngest';
 import { isSystemAdmin } from '@domain/entities/user';
-import { createDiagnosis } from '@domain/entities/diagnosis';
-import { v4 as uuidv4 } from 'uuid';
+
+async function triggerPostPaymentProcessing(
+  transactionId: string,
+  userId: string,
+  transactionRepo: SupabaseTransactionRepository,
+  diagnosisRepo: SupabaseDiagnosisRepository
+) {
+  const service = new PostPaymentProcessingService(
+    transactionRepo,
+    diagnosisRepo,
+    async ({ transactionId: queuedTransactionId, userId: queuedUserId }) => {
+      await inngest.send({
+        name: 'documents/extraction-batch-requested',
+        data: {
+          userId: queuedUserId,
+          transactionId: queuedTransactionId,
+        },
+      });
+    }
+  );
+
+  return service.execute({ transactionId, userId });
+}
 
 export async function initiatePaymentAction(transactionId: string) {
   const supabase = await createClient();
@@ -37,30 +59,8 @@ export async function initiatePaymentAction(transactionId: string) {
   if (userProfile && isSystemAdmin(userProfile)) {
     console.log('[ADMIN BYPASS] Skipping payment gateway, triggering document extraction and AI diagnosis.');
 
-    // Ensure diagnosis record exists (required for AI processing)
     const diagnosisRepo = new SupabaseDiagnosisRepository(supabase);
-    const existingDiagnosis = await diagnosisRepo.findByTransactionId(transactionId);
-
-    if (!existingDiagnosis) {
-      console.log('[ADMIN BYPASS] Creating missing diagnosis record...');
-      const newDiagnosis = createDiagnosis({
-        id: uuidv4(),
-        transactionId,
-      });
-      await diagnosisRepo.create(newDiagnosis);
-    }
-
-    // Update transaction status to PROCESSING
-    await transactionRepo.updateStatus(transactionId, 'PROCESSING');
-
-    // Trigger batch document extraction, which will then trigger AI diagnosis
-    await inngest.send({
-      name: 'documents/extraction-batch-requested',
-      data: {
-        userId: user.id,
-        transactionId: transactionId,
-      },
-    });
+    await triggerPostPaymentProcessing(transactionId, user.id, transactionRepo, diagnosisRepo);
 
     // Redirect to meus-diagnosticos
     redirect('/meus-diagnosticos');
@@ -113,7 +113,6 @@ export async function syncPaymentStatusAction(paymentId: string) {
 
   const useCase = new SyncPaymentStatusUseCase(
     paymentRepo,
-    transactionRepo,
     paymentGateway,
     auditService
   );
@@ -123,6 +122,11 @@ export async function syncPaymentStatusAction(paymentId: string) {
       paymentId,
       userId: user.id,
     });
+
+    if (result.becameCompleted) {
+      const diagnosisRepo = new SupabaseDiagnosisRepository(supabase);
+      await triggerPostPaymentProcessing(result.transactionId, user.id, transactionRepo, diagnosisRepo);
+    }
 
     revalidatePath('/meus-diagnosticos');
 
@@ -157,7 +161,6 @@ export async function syncPaymentByTransactionAction(transactionId: string) {
 
   const useCase = new SyncPaymentStatusUseCase(
     paymentRepo,
-    transactionRepo,
     paymentGateway,
     auditService
   );
@@ -167,6 +170,11 @@ export async function syncPaymentByTransactionAction(transactionId: string) {
       paymentId: pendingPayment.id,
       userId: user.id,
     });
+
+    if (result.becameCompleted) {
+      const diagnosisRepo = new SupabaseDiagnosisRepository(supabase);
+      await triggerPostPaymentProcessing(result.transactionId, user.id, transactionRepo, diagnosisRepo);
+    }
 
     revalidatePath('/meus-diagnosticos');
 

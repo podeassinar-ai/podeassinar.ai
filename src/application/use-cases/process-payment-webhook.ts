@@ -1,5 +1,4 @@
 import { IPaymentRepository } from '@domain/interfaces/payment-repository';
-import { ITransactionRepository } from '@domain/interfaces/transaction-repository';
 import { IPaymentGateway } from '@domain/interfaces/payment-gateway';
 import { IAuditService } from '@domain/interfaces/audit-service';
 
@@ -8,15 +7,20 @@ export interface ProcessPaymentWebhookInput {
   signature: string;
 }
 
+export interface ProcessPaymentWebhookOutput {
+  paymentCompleted: boolean;
+  transactionId?: string;
+  userId?: string;
+}
+
 export class ProcessPaymentWebhookUseCase {
   constructor(
     private paymentRepository: IPaymentRepository,
-    private transactionRepository: ITransactionRepository,
     private paymentGateway: IPaymentGateway,
     private auditService: IAuditService
   ) {}
 
-  async execute(input: ProcessPaymentWebhookInput): Promise<void> {
+  async execute(input: ProcessPaymentWebhookInput): Promise<ProcessPaymentWebhookOutput> {
     const isValid = this.paymentGateway.verifyWebhookSignature(input.payload, input.signature);
     if (!isValid) {
       throw new Error('Invalid webhook signature');
@@ -31,17 +35,16 @@ export class ProcessPaymentWebhookUseCase {
 
     switch (event.type) {
       case 'billing.paid':
-        await this.handlePaymentCompleted(payment.id, payment.transactionId, event.externalId, payment.userId);
-        break;
+        return this.handlePaymentCompleted(payment.id, payment.transactionId, event.externalId, payment.userId);
       case 'billing.expired':
         await this.paymentRepository.updateStatus(payment.id, 'FAILED', event.externalId);
-        break;
+        return { paymentCompleted: false };
       case 'billing.refunded':
         await this.paymentRepository.updateStatus(payment.id, 'REFUNDED', event.externalId);
-        break;
+        return { paymentCompleted: false };
       case 'billing.created':
         await this.paymentRepository.updateStatus(payment.id, 'PROCESSING', event.externalId);
-        break;
+        return { paymentCompleted: false };
     }
   }
 
@@ -50,9 +53,21 @@ export class ProcessPaymentWebhookUseCase {
     transactionId: string,
     externalId: string,
     userId: string
-  ): Promise<void> {
+  ): Promise<ProcessPaymentWebhookOutput> {
+    const existingPayment = await this.paymentRepository.findById(paymentId);
+    if (!existingPayment) {
+      throw new Error('Payment not found');
+    }
+
+    if (existingPayment.status === 'COMPLETED') {
+      return {
+        paymentCompleted: false,
+        transactionId,
+        userId,
+      };
+    }
+
     await this.paymentRepository.markPaid(paymentId, externalId);
-    await this.transactionRepository.updateStatus(transactionId, 'PROCESSING');
 
     await this.auditService.log({
       userId,
@@ -61,5 +76,11 @@ export class ProcessPaymentWebhookUseCase {
       resourceId: paymentId,
       metadata: { status: 'COMPLETED', externalId },
     });
+
+    return {
+      paymentCompleted: true,
+      transactionId,
+      userId,
+    };
   }
 }

@@ -205,7 +205,7 @@ export class SupabaseDiagnosisRepository implements IDiagnosisRepository {
     const { data, error } = await this.supabase
       .from(this.tableName)
       .select()
-      .in('status', ['DRAFT', 'AI_GENERATED'])
+      .in('status', ['AI_GENERATED'])
       .order('created_at', { ascending: true });
 
     if (error) throw new Error(`Failed to find pending reviews: ${error.message}`);

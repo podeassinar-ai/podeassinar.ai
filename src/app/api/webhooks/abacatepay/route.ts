@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ProcessPaymentWebhookUseCase } from '@application/use-cases/process-payment-webhook';
+import { PostPaymentProcessingService } from '@application/services/post-payment-processing';
 import { AbacatePayGateway } from '@infrastructure/services/abacate-pay-gateway';
 import { SupabaseAuditService } from '@infrastructure/services/supabase-audit-service';
-import { SupabasePaymentRepository, SupabaseTransactionRepository } from '@infrastructure/repositories';
+import { SupabaseDiagnosisRepository, SupabasePaymentRepository, SupabaseTransactionRepository } from '@infrastructure/repositories';
 import { getSupabaseServiceClient } from '@infrastructure/database/supabase-client';
 import { inngest } from '@/inngest';
 
@@ -29,30 +30,30 @@ export async function POST(req: NextRequest) {
     const transactionRepo = new SupabaseTransactionRepository(supabase);
     const auditService = new SupabaseAuditService();
 
-    const useCase = new ProcessPaymentWebhookUseCase(
-      paymentRepo,
-      transactionRepo,
-      paymentGateway,
-      auditService
-    );
+    const useCase = new ProcessPaymentWebhookUseCase(paymentRepo, paymentGateway, auditService);
 
-    await useCase.execute({
+    const result = await useCase.execute({
       payload,
       signature,
     });
 
-    if (event.type === 'billing.paid') {
-      const payment = await paymentRepo.findById(event.metadata.paymentId);
-      if (payment) {
-        // Trigger batch document extraction, which will then trigger diagnosis
-        await inngest.send({
-          name: 'documents/extraction-batch-requested',
-          data: {
-            userId: payment.userId,
-            transactionId: payment.transactionId,
-          },
-        });
-      }
+    if (result.paymentCompleted && result.transactionId && result.userId) {
+      const diagnosisRepo = new SupabaseDiagnosisRepository(supabase);
+      const service = new PostPaymentProcessingService(
+        transactionRepo,
+        diagnosisRepo,
+        async ({ transactionId, userId }) => {
+          await inngest.send({
+            name: 'documents/extraction-batch-requested',
+            data: { transactionId, userId },
+          });
+        }
+      );
+
+      await service.execute({
+        transactionId: result.transactionId,
+        userId: result.userId,
+      });
     }
 
     return NextResponse.json({ received: true });

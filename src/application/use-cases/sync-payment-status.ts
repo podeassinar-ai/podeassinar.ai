@@ -1,5 +1,4 @@
 import { IPaymentRepository } from '@domain/interfaces/payment-repository';
-import { ITransactionRepository } from '@domain/interfaces/transaction-repository';
 import { IPaymentGateway } from '@domain/interfaces/payment-gateway';
 import { IAuditService } from '@domain/interfaces/audit-service';
 import { PaymentStatus } from '@domain/entities/payment';
@@ -13,12 +12,14 @@ export interface SyncPaymentStatusOutput {
   synced: boolean;
   previousStatus: PaymentStatus;
   currentStatus: PaymentStatus;
+  becameCompleted: boolean;
+  transactionId: string;
+  paymentId: string;
 }
 
 export class SyncPaymentStatusUseCase {
   constructor(
     private paymentRepository: IPaymentRepository,
-    private transactionRepository: ITransactionRepository,
     private paymentGateway: IPaymentGateway,
     private auditService: IAuditService
   ) {}
@@ -44,6 +45,9 @@ export class SyncPaymentStatusUseCase {
         synced: false,
         previousStatus,
         currentStatus: previousStatus,
+        becameCompleted: false,
+        transactionId: payment.transactionId,
+        paymentId: payment.id,
       };
     }
 
@@ -53,7 +57,6 @@ export class SyncPaymentStatusUseCase {
     
     if (checkoutDetails.status === 'COMPLETED') {
       await this.paymentRepository.markPaid(payment.id, payment.externalId);
-      await this.transactionRepository.updateStatus(payment.transactionId, 'PROCESSING');
       newStatus = 'COMPLETED';
 
       await this.auditService.log({
@@ -88,6 +91,9 @@ export class SyncPaymentStatusUseCase {
       synced: newStatus !== previousStatus,
       previousStatus,
       currentStatus: newStatus,
+      becameCompleted: newStatus === 'COMPLETED',
+      transactionId: payment.transactionId,
+      paymentId: payment.id,
     };
   }
 }

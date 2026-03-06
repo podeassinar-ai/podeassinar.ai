@@ -111,51 +111,35 @@ export default function ReviewQueuePage() {
                     </p>
                   </td>
                   <td className="px-6 py-4">
-                    {item.diagnosis.status === 'DRAFT' ? (
-                      <span className="text-xs text-slate-400 italic">Aguardando IA...</span>
-                    ) : (
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1 h-2 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200">
-                          <div
-                            className={`h-full rounded-full ${(item.diagnosis.aiConfidence || 0) > 0.8 ? 'bg-emerald-500' :
-                              (item.diagnosis.aiConfidence || 0) > 0.6 ? 'bg-amber-500' : 'bg-red-500'
-                              }`}
-                            style={{ width: `${(item.diagnosis.aiConfidence || 0) * 100}%` }}
-                          ></div>
-                        </div>
-                        <span className="text-xs font-mono font-bold text-slate-600 min-w-[3ch]">
-                          {Math.round((item.diagnosis.aiConfidence || 0) * 100)}%
-                        </span>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 h-2 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                        <div
+                          className={`h-full rounded-full ${(item.diagnosis.aiConfidence || 0) > 0.8 ? 'bg-emerald-500' :
+                            (item.diagnosis.aiConfidence || 0) > 0.6 ? 'bg-amber-500' : 'bg-red-500'
+                            }`}
+                          style={{ width: `${(item.diagnosis.aiConfidence || 0) * 100}%` }}
+                        ></div>
                       </div>
-                    )}
+                      <span className="text-xs font-mono font-bold text-slate-600 min-w-[3ch]">
+                        {Math.round((item.diagnosis.aiConfidence || 0) * 100)}%
+                      </span>
+                    </div>
                   </td>
                   <td className="px-6 py-4">
-                    {item.diagnosis.status === 'DRAFT' ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-orange-50 text-orange-700 border border-orange-200 animate-pulse">
-                        Analisando IA
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
-                        Aguardando
-                      </span>
-                    )}
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                      Aguardando
+                    </span>
                   </td>
                   <td className="px-6 py-4">
                     <PriorityBadge score={priority} />
                   </td>
                   <td className="px-6 py-4 text-right">
-                    {item.diagnosis.status === 'DRAFT' ? (
-                      <span className="inline-flex items-center px-4 py-2 text-xs font-bold text-slate-400 bg-slate-100 rounded-lg cursor-not-allowed">
-                        Processando...
-                      </span>
-                    ) : (
-                      <Link
-                        href={`/admin/revisao/${item.diagnosis.id}`}
-                        className="inline-flex items-center px-4 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-orange-600 rounded-lg transition-all shadow-sm hover:shadow-md"
-                      >
-                        Revisar
-                      </Link>
-                    )}
+                    <Link
+                      href={`/admin/revisao/${item.diagnosis.id}`}
+                      className="inline-flex items-center px-4 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-orange-600 rounded-lg transition-all shadow-sm hover:shadow-md"
+                    >
+                      Revisar
+                    </Link>
                   </td>
                 </tr>
               );
