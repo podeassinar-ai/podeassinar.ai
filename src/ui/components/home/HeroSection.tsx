@@ -12,7 +12,7 @@ export function HeroSection({ getDiagnosticoHref }: HeroSectionProps) {
                 <div className="flex-1 relative z-10">
                     <div className="inline-flex items-center gap-2 px-3 py-1 mb-8 text-xs font-mono font-bold tracking-wider text-primary uppercase bg-orange-50 rounded-full border border-orange-100 shadow-sm animate-fade-in-up">
                         <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-                        AI ENGINE V2.0 ONLINE
+                        AI ENGINE ONLINE
                     </div>
 
                     <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 tracking-tighter mb-8 leading-[1.1] animate-fade-in-up">

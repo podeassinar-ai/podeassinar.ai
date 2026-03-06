@@ -113,8 +113,7 @@ export function Topbar() {
             </div>
           </div>
           <div className="flex flex-col justify-center">
-            <span className="block font-bold text-lg text-text-primary tracking-tight leading-tight group-hover:text-primary transition-colors">PodeAssinar</span>
-            <span className="text-[9px] text-primary bg-orange-50 px-1.5 py-0.5 rounded border border-orange-100 font-bold uppercase tracking-widest font-mono mt-1">AI ENGINE</span>
+            <span className="block font-bold text-lg text-text-primary tracking-tight leading-tight group-hover:text-primary transition-colors">PodeAssinar.ai</span>
           </div>
         </Link>
 
