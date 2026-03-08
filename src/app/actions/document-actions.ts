@@ -10,6 +10,7 @@ export async function saveDocumentRecordAction(transactionId: string, fileData: 
   size: number;
   type: string;
   path: string;
+  documentType?: string;
 }) {
   const supabase = await createClient();
   const repo = new SupabaseDocumentRepository(supabase);
@@ -17,12 +18,12 @@ export async function saveDocumentRecordAction(transactionId: string, fileData: 
   const document = createDocument({
     id: uuidv4(),
     transactionId,
-    type: 'OUTROS', // Default, needs refinement in UI
+    type: (fileData.documentType || 'OUTROS') as any,
     fileName: fileData.name,
     mimeType: fileData.type,
     fileSize: fileData.size,
     storageRef: fileData.path,
-    legalBasis: 'CONTRACT_EXECUTION', // Corrected default legal basis
+    legalBasis: 'CONTRACT_EXECUTION',
   });
 
   await repo.create(document);

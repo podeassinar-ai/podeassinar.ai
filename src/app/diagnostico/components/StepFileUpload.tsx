@@ -2,7 +2,7 @@ import { Card, Alert, FileUploader } from '@ui/components/common';
 
 interface StepFileUploadProps {
     uploadedFiles: File[];
-    handleFilesUpload: (files: File[]) => Promise<void>;
+    handleFilesUpload: (files: File[], documentType?: string) => Promise<void>;
     removeFile: (index: number) => void;
 }
 
@@ -17,21 +17,21 @@ export function StepFileUpload({ uploadedFiles, handleFilesUpload, removeFile }:
                 <div className="grid gap-6">
                     <FileUploader
                         label="Certidão de Matrícula"
-                        onUpload={handleFilesUpload}
+                        onUpload={(files) => handleFilesUpload(files, 'MATRICULA')}
                         accept=".pdf,.jpg,.jpeg,.png"
                         hint="Envie o PDF ou fotos legíveis de todas as páginas"
                     />
 
                     <FileUploader
                         label="IPTU (Opcional)"
-                        onUpload={handleFilesUpload}
+                        onUpload={(files) => handleFilesUpload(files, 'IPTU')}
                         accept=".pdf,.jpg,.jpeg,.png"
                         hint="Capa do carnê ou certidão negativa de débitos"
                     />
 
                     <FileUploader
                         label="Outros Documentos"
-                        onUpload={handleFilesUpload}
+                        onUpload={(files) => handleFilesUpload(files, 'OUTROS')}
                         accept=".pdf,.jpg,.jpeg,.png"
                         multiple
                         hint="Contratos, escrituras anteriores, etc."
