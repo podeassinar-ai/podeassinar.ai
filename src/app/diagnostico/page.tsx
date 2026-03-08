@@ -42,7 +42,14 @@ function DiagnosticoContent() {
   // Show loading during initial fetch
   if (initialLoading) {
     return (
-      <MainContainer title="Iniciando IA..." subtitle="">
+      <MainContainer
+        title="Iniciando IA..."
+        subtitle=""
+        breadcrumbs={[
+          { label: 'Início', href: '/' },
+          { label: 'Diagnóstico' },
+        ]}
+      >
         <div className="flex flex-col items-center justify-center py-20">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mb-4"></div>
           <p className="text-sm font-mono text-primary animate-pulse">Carregando dados da transação...</p>
@@ -56,6 +63,10 @@ function DiagnosticoContent() {
       <MainContainer
         title={`Nova Due Diligence: ${transactionTypeLabels[tipo]}`}
         subtitle="Inicie a análise de riscos jurídicos do imóvel com IA"
+        breadcrumbs={[
+          { label: 'Início', href: '/' },
+          { label: 'Diagnóstico' },
+        ]}
         action={
           <Button variant="ghost" onClick={() => setIsModalOpen(true)} className="flex items-center gap-2">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -141,7 +152,14 @@ function DiagnosticoContent() {
 
 function DiagnosticoLoading() {
   return (
-    <MainContainer title="Iniciando IA..." subtitle="">
+    <MainContainer
+      title="Iniciando IA..."
+      subtitle=""
+      breadcrumbs={[
+        { label: 'Início', href: '/' },
+        { label: 'Diagnóstico' },
+      ]}
+    >
       <div className="flex flex-col items-center justify-center py-20">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mb-4"></div>
         <p className="text-sm font-mono text-primary animate-pulse">Carregando módulos de análise...</p>

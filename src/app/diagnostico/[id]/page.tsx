@@ -45,7 +45,15 @@ function ReportContent() {
   if (error || !data) {
     const isNotFoundError = error?.includes('não encontrado') || !data;
     return (
-      <MainContainer title={isNotFoundError ? 'Relatório em Preparação' : 'Erro'} subtitle="">
+      <MainContainer
+        title={isNotFoundError ? 'Relatório em Preparação' : 'Erro'}
+        subtitle=""
+        breadcrumbs={[
+          { label: 'Início', href: '/' },
+          { label: 'Minhas Análises', href: '/meus-diagnosticos' },
+          { label: 'Relatório' },
+        ]}
+      >
         <div className="text-center py-12 max-w-md mx-auto">
           <div className="w-16 h-16 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
             <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -75,6 +83,11 @@ function ReportContent() {
     <MainContainer
       title="Relatório de Análise Jurídica"
       subtitle={`Referência: ${diagnosis.id.slice(0, 8)} • Emitido em ${formatDate(diagnosis.updatedAt)}`}
+      breadcrumbs={[
+        { label: 'Início', href: '/' },
+        { label: 'Minhas Análises', href: '/meus-diagnosticos' },
+        { label: 'Relatório' },
+      ]}
       action={
         <Button variant="secondary" className="gap-2 no-print" onClick={() => window.print()}>
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -112,7 +125,15 @@ function ReportContent() {
 
 function ReportLoading() {
   return (
-    <MainContainer title="Carregando Relatório..." subtitle="">
+    <MainContainer
+      title="Carregando Relatório..."
+      subtitle=""
+      breadcrumbs={[
+        { label: 'Início', href: '/' },
+        { label: 'Minhas Análises', href: '/meus-diagnosticos' },
+        { label: 'Relatório' },
+      ]}
+    >
       <div className="animate-pulse space-y-8">
         <div className="h-40 bg-gray-200 rounded"></div>
         <div className="grid grid-cols-3 gap-8">

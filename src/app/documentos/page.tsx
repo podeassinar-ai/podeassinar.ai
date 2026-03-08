@@ -30,6 +30,10 @@ export default async function DocumentosPage() {
       <MainContainer
         title="Documentos"
         subtitle="Central de documentos e arquivos enviados"
+        breadcrumbs={[
+          { label: 'Início', href: '/' },
+          { label: 'Documentos' },
+        ]}
       >
         <Alert variant="info" className="mb-8">
           <strong>Política de Segurança:</strong> Seus documentos são criptografados.

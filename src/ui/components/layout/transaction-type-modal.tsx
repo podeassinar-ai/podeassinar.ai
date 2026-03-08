@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Modal } from '../common/modal';
 import { transactionTypes, getSlugFromId } from '../../constants/transactions';

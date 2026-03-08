@@ -1,10 +1,11 @@
 import { Topbar } from '@ui/components/layout/topbar';
 import { MainContainer } from '@ui/components/layout/main-container';
-import { Button, SyncPaymentButton } from '@ui/components/common';
+import { Button, SyncPaymentButton, TransactionStatusProgress } from '@ui/components/common';
 import { TechBadge } from '@ui/components/common/tech-badge';
 import Link from 'next/link';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { buildDiagnosticosPagination } from './pagination';
 
 const transactionLabels: Record<string, string> = {
   REGULARIZATION: 'Regularização',
@@ -32,10 +33,11 @@ const statusStyles: Record<string, { label: string; variant: 'default' | 'succes
 export default async function MeusDiagnosticosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ success?: string }>;
+  searchParams: Promise<{ success?: string; page?: string }>;
 }) {
   const params = await searchParams;
   const showSuccess = params.success === 'true';
+  const pageSize = 10;
   const cookieStore = await cookies();
 
   const supabase = createServerClient(
@@ -51,6 +53,7 @@ export default async function MeusDiagnosticosPage({
   );
 
   let transactions: any[] = [];
+  let totalTransactions = 0;
   let error = null;
 
   try {
@@ -64,7 +67,7 @@ export default async function MeusDiagnosticosPage({
     if (user) {
       const { data, error: dbError } = await supabase
         .from('transactions')
-        .select('*')
+        .select('*', { count: 'exact' })
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -72,6 +75,7 @@ export default async function MeusDiagnosticosPage({
         console.error('Error fetching transactions:', dbError);
         error = dbError.message;
       } else if (data) {
+        totalTransactions = data.length;
         transactions = data;
       }
     }
@@ -80,12 +84,24 @@ export default async function MeusDiagnosticosPage({
     error = 'Erro interno ao carregar dados.';
   }
 
+  const pagination = buildDiagnosticosPagination({
+    pageParam: params.page,
+    totalItems: totalTransactions,
+    pageSize,
+    searchParams: params,
+  });
+  const paginatedTransactions = transactions.slice(pagination.rangeStart, pagination.rangeEnd + 1);
+
   return (
     <>
       <Topbar />
       <MainContainer
         title="Minhas Análises"
         subtitle="Histórico de Due Diligence e relatórios gerados"
+        breadcrumbs={[
+          { label: 'Início', href: '/' },
+          { label: 'Minhas Análises' },
+        ]}
         action={
           <Link href="/diagnostico">
             <Button variant="primary" className="flex items-center gap-2">
@@ -123,7 +139,7 @@ export default async function MeusDiagnosticosPage({
               </Button>
             </Link>
           </div>
-        ) : transactions.length === 0 ? (
+        ) : paginatedTransactions.length === 0 ? (
           <div className="bg-white border border-border border-dashed rounded-lg p-12 text-center">
             <div className="w-16 h-16 mx-auto mb-4 bg-gray-50 rounded-full flex items-center justify-center animate-pulse">
               <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -142,7 +158,7 @@ export default async function MeusDiagnosticosPage({
           </div>
         ) : (
           <div className="space-y-4">
-            {transactions.map((diag) => {
+            {paginatedTransactions.map((diag) => {
               const status = statusStyles[diag.status] || { label: diag.status, variant: 'default' };
 
               // Mock price if not stored in transaction (it's in payment usually, or fixed)
@@ -163,6 +179,11 @@ export default async function MeusDiagnosticosPage({
                     <p className="text-xs text-text-muted mt-1 font-mono">
                       REF: {diag.id.slice(0, 8)} • {new Date(diag.created_at).toLocaleDateString('pt-BR')}
                     </p>
+                    {['PENDING_PAYMENT', 'PROCESSING', 'PENDING_REVIEW', 'COMPLETED'].includes(diag.status) && (
+                      <div className="mt-4">
+                        <TransactionStatusProgress status={diag.status} compact />
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-6">
@@ -200,9 +221,45 @@ export default async function MeusDiagnosticosPage({
                 </div>
               );
             })}
+
+            {totalTransactions > pageSize && (
+              <PaginationControls
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                buildPageHref={pagination.buildPageHref}
+              />
+            )}
           </div>
         )}
       </MainContainer>
     </>
+  );
+}
+
+function PaginationControls({
+  currentPage,
+  totalPages,
+  buildPageHref,
+}: {
+  currentPage: number;
+  totalPages: number;
+  buildPageHref: (page: number) => string;
+}) {
+  return (
+    <div className="flex items-center justify-between pt-6">
+      <Link href={buildPageHref(Math.max(1, currentPage - 1))} aria-disabled={currentPage === 1}>
+        <Button variant="secondary" disabled={currentPage === 1}>
+          ← Anterior
+        </Button>
+      </Link>
+      <p className="text-sm text-text-muted font-mono">
+        Página {currentPage} de {totalPages}
+      </p>
+      <Link href={buildPageHref(Math.min(totalPages, currentPage + 1))} aria-disabled={currentPage === totalPages}>
+        <Button variant="secondary" disabled={currentPage === totalPages}>
+          Próxima →
+        </Button>
+      </Link>
+    </div>
   );
 }
