@@ -157,6 +157,7 @@ export function Topbar() {
               </div>
               <button
                 onClick={handleLogout}
+                aria-label="Sair da conta"
                 className="text-text-muted hover:text-red-500 transition-colors p-1.5 hover:bg-red-50 rounded-lg"
                 title="Sair"
               >

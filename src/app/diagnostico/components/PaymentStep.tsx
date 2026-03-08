@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, Button } from '@ui/components/common';
+import { Card, Button, Modal } from '@ui/components/common';
 import { checkSubscriptionCreditsAction, consumeSubscriptionCreditAction } from '../../actions/subscription-actions';
 import { mapGenericError } from '@/utils/error-mapping';
 import { PaymentStepProps } from '../types';
@@ -17,6 +17,7 @@ export function PaymentStep({ transactionId, matriculaOption, loading, onPayment
     } | null>(null);
     const [checkingCredits, setCheckingCredits] = useState(true);
     const [usingCredit, setUsingCredit] = useState(false);
+    const [showCreditConfirmation, setShowCreditConfirmation] = useState(false);
 
     useEffect(() => {
         async function checkCredits() {
@@ -51,6 +52,10 @@ export function PaymentStep({ transactionId, matriculaOption, loading, onPayment
         }
     };
 
+    const openCreditConfirmation = () => {
+        setShowCreditConfirmation(true);
+    };
+
     return (
         <div className="space-y-6">
             {/* Subscription Credit Option */}
@@ -80,7 +85,7 @@ export function PaymentStep({ transactionId, matriculaOption, loading, onPayment
 
                             <Button
                                 variant="primary"
-                                onClick={handleUseCredit}
+                                onClick={openCreditConfirmation}
                                 loading={usingCredit}
                                 disabled={usingCredit || loading}
                                 className="w-full sm:w-auto px-8 py-3 text-lg font-bold shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:-translate-y-0.5 transition-all"
@@ -153,6 +158,49 @@ export function PaymentStep({ transactionId, matriculaOption, loading, onPayment
                     Ambiente seguro. Dados criptografados.
                 </p>
             </Card>
+
+            <Modal
+                isOpen={showCreditConfirmation}
+                onClose={() => !usingCredit && setShowCreditConfirmation(false)}
+                title="Confirmar uso do crédito"
+            >
+                <div className="space-y-6">
+                    <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+                        <p className="text-sm text-text-primary">
+                            Este diagnóstico consumirá <strong>1 crédito</strong> do seu plano.
+                        </p>
+                        {creditInfo && (
+                            <p className="text-sm text-text-secondary mt-2">
+                                Você tem <strong>{creditInfo.remainingCredits}</strong> crédito(s) disponível(is) antes desta confirmação.
+                            </p>
+                        )}
+                    </div>
+
+                    <p className="text-sm text-text-secondary">
+                        Ao confirmar, o crédito será utilizado imediatamente e sua análise seguirá para processamento.
+                    </p>
+
+                    <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                        <Button
+                            variant="secondary"
+                            onClick={() => setShowCreditConfirmation(false)}
+                            disabled={usingCredit}
+                        >
+                            Manter Pagamento Normal
+                        </Button>
+                        <Button
+                            variant="primary"
+                            onClick={async () => {
+                                await handleUseCredit();
+                                setShowCreditConfirmation(false);
+                            }}
+                            loading={usingCredit}
+                        >
+                            Confirmar Uso do Crédito
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 }

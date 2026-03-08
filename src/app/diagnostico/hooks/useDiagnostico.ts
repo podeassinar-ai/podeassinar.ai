@@ -267,6 +267,7 @@ export function useDiagnostico() {
                 } else {
                     await updateTransactionAction(transactionId, formData);
                 }
+                addToast('Dados do imóvel salvos com sucesso!', 'success');
             } else if (currentStep === 1) {
                 if (transactionId) {
                     await updateTransactionAction(transactionId, {
@@ -274,12 +275,14 @@ export function useDiagnostico() {
                         advanceStatus: 'PENDING_DOCUMENTS',
                     });
                 }
+                addToast('Questionário concluído com sucesso!', 'success');
             } else if (currentStep === 2) {
                 if (transactionId) {
                     await updateTransactionAction(transactionId, {
                         advanceStatus: 'PENDING_PAYMENT',
                     });
                 }
+                addToast('Documentos confirmados. Pagamento liberado!', 'success');
             }
 
             if (currentStep < STEPS.length - 1) {
