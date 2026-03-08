@@ -16,12 +16,21 @@ export default async function DiagnosisReportPage({
 }) {
   const { id } = await params;
   const reportState = await getDiagnosisReportState(id);
+  const breadcrumbs = [
+    { label: 'Início', href: '/' },
+    { label: 'Minhas Análises', href: '/meus-diagnosticos' },
+    { label: 'Relatório' },
+  ];
 
   if (reportState.status === 'not_found') {
     return (
       <>
         <Topbar />
-        <MainContainer title="Relatório em Preparação" subtitle="">
+        <MainContainer
+          title="Relatório em Preparação"
+          subtitle=""
+          breadcrumbs={breadcrumbs}
+        >
           <div className="text-center py-12 max-w-md mx-auto">
             <div className="w-16 h-16 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
               <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -45,7 +54,11 @@ export default async function DiagnosisReportPage({
     return (
       <>
         <Topbar />
-        <MainContainer title="Relatório em Preparação" subtitle="">
+        <MainContainer
+          title="Relatório em Preparação"
+          subtitle=""
+          breadcrumbs={breadcrumbs}
+        >
           <div className="text-center py-12 max-w-md mx-auto">
             <div className="w-16 h-16 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
               <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -74,6 +87,7 @@ export default async function DiagnosisReportPage({
       <MainContainer
         title="Relatório de Análise Jurídica"
         subtitle={`Referência: ${diagnosis.id.slice(0, 8)} • Emitido em ${formatDate(diagnosis.updatedAt)}`}
+        breadcrumbs={breadcrumbs}
         action={<PrintReportButton />}
       >
         <DiagnosisSummaryCard

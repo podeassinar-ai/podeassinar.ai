@@ -39,7 +39,12 @@ export default async function MinhaAssinaturaPage({
     return (
         <>
             <Topbar />
-            <MainContainer>
+            <MainContainer
+                breadcrumbs={[
+                    { label: 'Início', href: '/' },
+                    { label: 'Minha Assinatura' },
+                ]}
+            >
                 <div className="max-w-5xl mx-auto py-8">
                     {/* Header */}
                     <div className="mb-10 animate-fade-up">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 
@@ -62,6 +62,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [loading, setLoading] = useState(true);
   const [hasAccess, setHasAccess] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   useEffect(() => {
     async function checkAccess() {
@@ -113,8 +114,38 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex font-sans">
       <CommandPalette />
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 h-16 bg-slate-950 border-b border-slate-800 flex items-center justify-between px-4">
+        <button
+          type="button"
+          onClick={() => setIsMobileNavOpen(true)}
+          className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-200"
+          aria-label="Abrir navegação do admin"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+          Menu
+        </button>
+        <span className="text-sm font-bold text-white">Control Room</span>
+      </div>
+
+      {isMobileNavOpen && (
+        <button
+          type="button"
+          aria-label="Fechar navegação do admin"
+          className="md:hidden fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm"
+          onClick={() => setIsMobileNavOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-64 flex-shrink-0 bg-slate-900 border-r border-slate-800 flex flex-col fixed inset-y-0 z-50 shadow-xl">
+      <aside
+        className={[
+          'w-64 flex-shrink-0 bg-slate-900 border-r border-slate-800 flex flex-col fixed inset-y-0 z-50 shadow-xl transition-transform duration-200',
+          'md:translate-x-0',
+          isMobileNavOpen ? 'translate-x-0' : '-translate-x-full',
+        ].join(' ')}
+      >
         <div className="h-16 flex items-center px-6 border-b border-slate-800/80 bg-slate-900">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white font-bold font-mono shadow-lg shadow-orange-900/50">
@@ -137,6 +168,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <Link
                   key={item.href}
                   href={item.href}
+                  onClick={() => setIsMobileNavOpen(false)}
                   className={`
                     group flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
                     ${isActive
@@ -177,7 +209,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 ml-64 p-8 relative">
+      <main className="flex-1 md:ml-64 p-4 pt-24 md:p-8 md:pt-8 relative">
         {/* Background Grid Pattern */}
         <div className="absolute inset-0 z-0 pointer-events-none opacity-[0.4]" style={{
           backgroundImage: 'linear-gradient(#e2e8f0 1px, transparent 1px), linear-gradient(90deg, #e2e8f0 1px, transparent 1px)',
