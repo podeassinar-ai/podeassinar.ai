@@ -89,7 +89,7 @@ export function useDiagnostico() {
         setFormData((prev) => ({ ...prev, [field]: value }));
     };
 
-    const handleFilesUpload = async (files: File[]) => {
+    const handleFilesUpload = async (files: File[], documentType?: string) => {
         if (!transactionId) {
             addToast('Erro: Transação não iniciada.', 'error');
             return;
@@ -112,6 +112,7 @@ export function useDiagnostico() {
                     size: file.size,
                     type: file.type,
                     path: filePath,
+                    documentType,
                 });
 
                 newUploadedFiles.push(file);
@@ -156,7 +157,16 @@ export function useDiagnostico() {
                 }
             } else if (currentStep === 1) {
                 if (transactionId) {
-                    await updateTransactionAction(transactionId, formData);
+                    await updateTransactionAction(transactionId, {
+                        ...formData,
+                        advanceStatus: 'PENDING_DOCUMENTS',
+                    });
+                }
+            } else if (currentStep === 2) {
+                if (transactionId) {
+                    await updateTransactionAction(transactionId, {
+                        advanceStatus: 'PENDING_PAYMENT',
+                    });
                 }
             }
 

@@ -56,6 +56,15 @@ export async function updateTransactionAction(id: string, data: any) {
   if (data.matriculaOption !== undefined) transaction.matriculaOption = data.matriculaOption;
   if (data.additionalInfo !== undefined) transaction.additionalInfo = data.additionalInfo;
 
+  // Advance status if requested
+  if (data.advanceStatus) {
+    if (transaction.status === 'PENDING_QUESTIONNAIRE' && data.advanceStatus === 'PENDING_DOCUMENTS') {
+      transaction.status = 'PENDING_DOCUMENTS';
+    } else if (transaction.status === 'PENDING_DOCUMENTS' && data.advanceStatus === 'PENDING_PAYMENT') {
+      transaction.status = 'PENDING_PAYMENT';
+    }
+  }
+
   await repo.update(transaction);
   return transaction;
 }

@@ -117,6 +117,7 @@ export class SupabaseTransactionRepository implements ITransactionRepository {
 
   async update(transaction: Transaction): Promise<Transaction> {
     const allowedFields = {
+      status: transaction.status,
       property_address: transaction.propertyAddress ?? null,
       registry_number: transaction.registryNumber ?? null,
       registry_office: transaction.registryOffice ?? null,
