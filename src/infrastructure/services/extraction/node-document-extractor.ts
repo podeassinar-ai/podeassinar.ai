@@ -1,7 +1,6 @@
 import {
   IDocumentExtractor,
   ExtractionResult,
-  ExtractionMetadata,
 } from '@domain/interfaces/document-extractor';
 
 const SUPPORTED_MIME_TYPES = [
@@ -52,7 +51,7 @@ export class NodeDocumentExtractor implements IDocumentExtractor {
       }
 
       if (mimeType.includes('wordprocessingml')) {
-        return this.extractDocx(content, mimeType);
+        return await this.extractDocx(content, mimeType);
       }
 
       return {
@@ -188,11 +187,11 @@ export class NodeDocumentExtractor implements IDocumentExtractor {
     };
   }
 
-  private extractDocx(content: Buffer, mimeType: string): ExtractionResult {
+  private async extractDocx(content: Buffer, mimeType: string): Promise<ExtractionResult> {
     // Basic DOCX extraction: DOCX is a ZIP containing XML.
     // For a lightweight approach, extract the raw XML text content.
     try {
-      const AdmZip = require('adm-zip');
+      const { default: AdmZip } = await import('adm-zip');
       const zip = new AdmZip(content);
       const docXml = zip.readAsText('word/document.xml');
 
