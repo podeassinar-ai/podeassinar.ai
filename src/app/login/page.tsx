@@ -88,7 +88,7 @@ function LoginForm() {
           {mode === 'login' ? 'Bem-vindo de volta' : 'Criar Conta'}
         </h1>
         <p className="text-text-secondary mt-2">
-          PodeAssinar AI Engine
+          PodeAssinar.ai
         </p>
       </div>
 
