@@ -11,7 +11,7 @@ import { OpenAIService } from '@infrastructure/services/openai-service';
 import { SupabaseAuditService } from '@infrastructure/services/supabase-audit-service';
 import { SupabaseStorageService } from '@infrastructure/services/supabase-storage-service';
 import { ResendEmailService } from '@infrastructure/services/email-service';
-import { PythonDocumentExtractor } from '@infrastructure/services/extraction';
+import { NodeDocumentExtractor } from '@infrastructure/services/extraction';
 import { GenerateAIDiagnosisUseCase } from '@application/use-cases/generate-ai-diagnosis';
 import { ExtractDocumentTextUseCase } from '@application/use-cases/extract-document-text';
 import { NotificationDispatcher } from '@application/services/notification-dispatcher';
@@ -55,7 +55,7 @@ export const extractDocumentText = inngest.createFunction(
 
       const documentRepo = new SupabaseDocumentRepository(supabase);
       const storageService = new SupabaseStorageService();
-      const documentExtractor = new PythonDocumentExtractor();
+      const documentExtractor = new NodeDocumentExtractor();
       const auditService = new SupabaseAuditService();
 
       const useCase = new ExtractDocumentTextUseCase(
@@ -108,7 +108,7 @@ export const extractAllDocuments = inngest.createFunction(
         const supabase = getSupabaseServiceClient();
         const documentRepo = new SupabaseDocumentRepository(supabase);
         const storageService = new SupabaseStorageService();
-        const documentExtractor = new PythonDocumentExtractor();
+        const documentExtractor = new NodeDocumentExtractor();
         const auditService = new SupabaseAuditService();
 
         const useCase = new ExtractDocumentTextUseCase(
