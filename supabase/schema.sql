@@ -7,11 +7,19 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- ENUM Types
 CREATE TYPE transaction_type AS ENUM (
   'SALE',
-  'PURCHASE', 
+  'PURCHASE',
   'RENTAL',
   'FINANCING',
   'REFINANCING',
-  'REGULARIZATION'
+  'REGULARIZATION',
+  'DONATION',
+  'EXCHANGE',
+  'BUILT_TO_SUIT',
+  'SURFACE_RIGHT',
+  'RURAL_LEASE',
+  'GUARANTEES',
+  'FIDUCIARY',
+  'CAPITAL'
 );
 
 CREATE TYPE transaction_status AS ENUM (
@@ -21,7 +29,8 @@ CREATE TYPE transaction_status AS ENUM (
   'PROCESSING',
   'PENDING_REVIEW',
   'COMPLETED',
-  'CANCELLED'
+  'CANCELLED',
+  'ERROR'
 );
 
 CREATE TYPE document_type AS ENUM (
@@ -125,6 +134,11 @@ CREATE TABLE transactions (
   property_address TEXT,
   registry_number TEXT,
   registry_office TEXT,
+  property_type TEXT,
+  property_value TEXT,
+  has_matricula TEXT,
+  matricula_option TEXT,
+  additional_info TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -174,6 +188,7 @@ CREATE TABLE diagnoses (
   risks JSONB NOT NULL DEFAULT '[]',
   pathways JSONB NOT NULL DEFAULT '[]',
   summary TEXT NOT NULL DEFAULT '',
+  ai_confidence REAL,
   ai_generated_at TIMESTAMPTZ,
   reviewed_by UUID REFERENCES users(id),
   reviewed_at TIMESTAMPTZ,
