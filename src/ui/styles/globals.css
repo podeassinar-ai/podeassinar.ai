@@ -108,3 +108,35 @@
 .animate-scan {
   animation: scanline 2s linear infinite;
 }
+
+@media print {
+  .no-print,
+  nav,
+  [class*="topbar"],
+  [class*="mobile-nav"] {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    background-image: none !important;
+  }
+
+  * {
+    box-shadow: none !important;
+  }
+
+  .grid {
+    display: block !important;
+  }
+
+  .grid > * {
+    margin-bottom: 1rem;
+  }
+
+  html,
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

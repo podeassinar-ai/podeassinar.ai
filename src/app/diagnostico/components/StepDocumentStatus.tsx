@@ -1,12 +1,14 @@
 import { Card, Select, Textarea, Alert } from '@ui/components/common';
-import { FormData } from '../types';
+import { FormData, ValidationErrors } from '../types';
 
 interface StepDocumentStatusProps {
     formData: FormData;
     updateField: (field: keyof FormData, value: string) => void;
+    errors?: ValidationErrors;
+    onBlur?: (field: keyof FormData) => void;
 }
 
-export function StepDocumentStatus({ formData, updateField }: StepDocumentStatusProps) {
+export function StepDocumentStatus({ formData, updateField, errors, onBlur }: StepDocumentStatusProps) {
     return (
         <Card title="Status Documental" description="Entendimento inicial da situação jurídica">
             <div className="space-y-8">
@@ -21,6 +23,8 @@ export function StepDocumentStatus({ formData, updateField }: StepDocumentStatus
                         placeholder="Selecione uma opção"
                         value={formData.hasMatricula}
                         onChange={(e) => updateField('hasMatricula', e.target.value)}
+                        onBlur={() => onBlur?.('hasMatricula')}
+                        error={errors?.hasMatricula}
                     />
 
                     {(formData.hasMatricula === 'nao' || formData.hasMatricula === 'antiga') && (
@@ -47,6 +51,8 @@ export function StepDocumentStatus({ formData, updateField }: StepDocumentStatus
                                 placeholder="Selecione uma opção"
                                 value={formData.matriculaOption}
                                 onChange={(e) => updateField('matriculaOption', e.target.value)}
+                                onBlur={() => onBlur?.('matriculaOption')}
+                                error={errors?.matriculaOption}
                             />
                         </div>
                     )}
@@ -57,6 +63,7 @@ export function StepDocumentStatus({ formData, updateField }: StepDocumentStatus
                     placeholder="Descreva pendências conhecidas, dívidas, inventários em andamento ou qualquer detalhe relevante sobre o imóvel."
                     value={formData.additionalInfo}
                     onChange={(e) => updateField('additionalInfo', e.target.value)}
+                    onBlur={() => onBlur?.('additionalInfo')}
                     hint="Essas informações orientam o foco da nossa análise jurídica."
                 />
             </div>

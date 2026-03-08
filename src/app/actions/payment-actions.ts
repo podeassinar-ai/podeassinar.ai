@@ -82,7 +82,7 @@ export async function initiatePaymentAction(transactionId: string) {
     const result = await useCase.execute({
       userId: user.id,
       transactionId: transactionId,
-      successUrl: `${process.env.NEXT_PUBLIC_APP_URL}/meus-diagnosticos`,
+      successUrl: `${process.env.NEXT_PUBLIC_APP_URL}/meus-diagnosticos?success=true`,
       cancelUrl: `${process.env.NEXT_PUBLIC_APP_URL}/diagnostico`,
     });
 

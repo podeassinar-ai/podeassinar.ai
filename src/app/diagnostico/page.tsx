@@ -24,9 +24,14 @@ function DiagnosticoContent() {
     initialLoading,
     formData,
     uploadedFiles,
+    failedFiles,
+    errors,
     updateField,
+    handleBlur,
     handleFilesUpload,
     removeFile,
+    retryFailedUpload,
+    removeFailedFile,
     canProceed,
     handleNext,
     handleBack,
@@ -66,18 +71,31 @@ function DiagnosticoContent() {
 
         <div className="max-w-3xl mx-auto">
           {currentStep === 0 && (
-            <StepPropertyInfo formData={formData} updateField={updateField} />
+            <StepPropertyInfo
+              formData={formData}
+              updateField={updateField}
+              errors={errors}
+              onBlur={handleBlur}
+            />
           )}
 
           {currentStep === 1 && (
-            <StepDocumentStatus formData={formData} updateField={updateField} />
+            <StepDocumentStatus
+              formData={formData}
+              updateField={updateField}
+              errors={errors}
+              onBlur={handleBlur}
+            />
           )}
 
           {currentStep === 2 && (
             <StepFileUpload
               uploadedFiles={uploadedFiles}
+              failedFiles={failedFiles}
               handleFilesUpload={handleFilesUpload}
               removeFile={removeFile}
+              onRetry={retryFailedUpload}
+              onDismiss={removeFailedFile}
             />
           )}
 

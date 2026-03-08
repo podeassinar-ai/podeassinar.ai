@@ -6,6 +6,7 @@ import { getActiveSubscriptionAction, checkSubscriptionCreditsAction } from '@ap
 import { formatPlanPrice } from '@domain/entities/plan';
 import { redirect } from 'next/navigation';
 import { createClient } from '@infrastructure/database/supabase-server';
+import { CancelSubscriptionButton } from './components/CancelSubscriptionButton';
 
 export default async function MinhaAssinaturaPage({
     searchParams,
@@ -121,9 +122,10 @@ export default async function MinhaAssinaturaPage({
                                             </Button>
                                         </Link>
                                         <div className="flex-1">
-                                            <Button variant="ghost" className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 justify-center">
-                                                Cancelar Assinatura
-                                            </Button>
+                                            <CancelSubscriptionButton
+                                                subscriptionId={subscription.id}
+                                                currentPeriodEnd={subscription.currentPeriodEnd}
+                                            />
                                         </div>
                                     </div>
                                 </div>

@@ -9,6 +9,14 @@ export interface FormData {
     additionalInfo: string;
 }
 
+export interface FailedFile {
+    file: File;
+    documentType?: string;
+    error: string;
+}
+
+export type ValidationErrors = Partial<Record<keyof FormData, string>>;
+
 export interface PaymentStepProps {
     transactionId: string | null;
     matriculaOption: string;

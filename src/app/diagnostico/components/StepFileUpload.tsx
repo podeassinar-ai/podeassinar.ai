@@ -1,12 +1,23 @@
 import { Card, Alert, FileUploader } from '@ui/components/common';
+import type { FailedFile } from '../types';
 
 interface StepFileUploadProps {
     uploadedFiles: File[];
+    failedFiles: FailedFile[];
     handleFilesUpload: (files: File[], documentType?: string) => Promise<void>;
     removeFile: (index: number) => void;
+    onRetry: (index: number) => Promise<void>;
+    onDismiss: (index: number) => void;
 }
 
-export function StepFileUpload({ uploadedFiles, handleFilesUpload, removeFile }: StepFileUploadProps) {
+export function StepFileUpload({
+    uploadedFiles,
+    failedFiles,
+    handleFilesUpload,
+    removeFile,
+    onRetry,
+    onDismiss,
+}: StepFileUploadProps) {
     return (
         <Card title="Upload de Documentos" description="Ambiente seguro e criptografado">
             <div className="space-y-6">
@@ -64,6 +75,42 @@ export function StepFileUpload({ uploadedFiles, handleFilesUpload, removeFile }:
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                         </svg>
                                     </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {failedFiles.length > 0 && (
+                    <div className="bg-red-50 rounded border border-red-200 p-4">
+                        <h4 className="text-sm font-medium text-red-800 mb-3 font-mono uppercase">Falhas no Envio</h4>
+                        <div className="space-y-2">
+                            {failedFiles.map((failedFile, index) => (
+                                <div
+                                    key={`${failedFile.file.name}-${index}`}
+                                    className="flex flex-col gap-3 rounded border border-red-100 bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
+                                >
+                                    <div>
+                                        <p className="text-sm font-medium text-red-700">{failedFile.file.name}</p>
+                                        <p className="text-xs text-red-600 mt-1">{failedFile.error}</p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => onRetry(index)}
+                                            className="px-3 py-1.5 rounded-lg border border-red-200 text-sm text-red-700 hover:bg-red-100 transition-colors"
+                                        >
+                                            Tentar novamente
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => onDismiss(index)}
+                                            className="px-3 py-1.5 rounded-lg text-sm text-red-500 hover:bg-red-100 transition-colors"
+                                            aria-label={`Descartar falha de ${failedFile.file.name}`}
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
                         </div>

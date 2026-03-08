@@ -10,8 +10,13 @@ import { initiatePaymentAction } from '../../actions/payment-actions';
 import { saveDocumentRecordAction } from '../../actions/document-actions';
 import { getIdFromSlug } from '@/ui/constants/transactions';
 import { mapGenericError } from '@/utils/error-mapping';
-import { FormData } from '../types';
+import { FailedFile, FormData, ValidationErrors } from '../types';
 import { STEPS } from '../constants';
+import {
+    buildUploadFailure,
+    validateDiagnosticoField,
+    validateDiagnosticoStep,
+} from './useDiagnostico.helpers';
 
 const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -42,6 +47,9 @@ export function useDiagnostico() {
         additionalInfo: '',
     });
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+    const [failedFiles, setFailedFiles] = useState<FailedFile[]>([]);
+    const [errors, setErrors] = useState<ValidationErrors>({});
+    const [touched, setTouched] = useState<Set<keyof FormData>>(new Set());
 
     useEffect(() => {
         async function loadTransaction() {
@@ -86,7 +94,81 @@ export function useDiagnostico() {
     }, [existingId, addToast]);
 
     const updateField = (field: keyof FormData, value: string) => {
-        setFormData((prev) => ({ ...prev, [field]: value }));
+        setFormData((prev) => {
+            const next = { ...prev, [field]: value };
+
+            if (touched.has(field) || field === 'hasMatricula') {
+                const nextErrors = { ...errors };
+                const fieldError = validateDiagnosticoField(next, field);
+
+                if (fieldError) nextErrors[field] = fieldError;
+                else delete nextErrors[field];
+
+                if (field === 'hasMatricula' || touched.has('matriculaOption')) {
+                    const matriculaOptionError = validateDiagnosticoField(next, 'matriculaOption');
+                    if (matriculaOptionError) nextErrors.matriculaOption = matriculaOptionError;
+                    else delete nextErrors.matriculaOption;
+                }
+
+                setErrors(nextErrors);
+            }
+
+            return next;
+        });
+    };
+
+    const handleBlur = (field: keyof FormData) => {
+        setTouched((prev) => new Set(prev).add(field));
+        setErrors((prev) => {
+            const next = { ...prev };
+            const fieldError = validateDiagnosticoField(formData, field);
+
+            if (fieldError) next[field] = fieldError;
+            else delete next[field];
+
+            return next;
+        });
+    };
+
+    const validateStep = (step: number) => {
+        const result = validateDiagnosticoStep(formData, step);
+        if (result.fields.length > 0) {
+            setTouched((prev) => {
+                const next = new Set(prev);
+                for (const field of result.fields) next.add(field);
+                return next;
+            });
+        }
+        setErrors((prev) => {
+            const next = { ...prev };
+            for (const field of result.fields) {
+                if (result.errors[field]) next[field] = result.errors[field];
+                else delete next[field];
+            }
+            return next;
+        });
+        return result.isValid;
+    };
+
+    const uploadSingleFile = async (file: File, documentType?: string) => {
+        if (!transactionId) {
+            throw new Error('Transação não iniciada.');
+        }
+
+        const filePath = `transactions/${transactionId}/${Date.now()}_${file.name}`;
+        const { error: uploadError } = await supabase.storage
+            .from('documents')
+            .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        await saveDocumentRecordAction(transactionId, {
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            path: filePath,
+            documentType,
+        });
     };
 
     const handleFilesUpload = async (files: File[], documentType?: string) => {
@@ -98,28 +180,25 @@ export function useDiagnostico() {
         setLoading(true);
         try {
             const newUploadedFiles = [...uploadedFiles];
+            const newFailedFiles: FailedFile[] = [];
 
             for (const file of files) {
-                const filePath = `transactions/${transactionId}/${Date.now()}_${file.name}`;
-                const { error: uploadError } = await supabase.storage
-                    .from('documents')
-                    .upload(filePath, file);
-
-                if (uploadError) throw uploadError;
-
-                await saveDocumentRecordAction(transactionId, {
-                    name: file.name,
-                    size: file.size,
-                    type: file.type,
-                    path: filePath,
-                    documentType,
-                });
-
-                newUploadedFiles.push(file);
+                try {
+                    await uploadSingleFile(file, documentType);
+                    newUploadedFiles.push(file);
+                } catch (err) {
+                    newFailedFiles.push(buildUploadFailure(file, documentType, err));
+                }
             }
 
             setUploadedFiles(newUploadedFiles);
-            addToast('Documentos enviados com sucesso!', 'success');
+            if (newFailedFiles.length > 0) {
+                setFailedFiles((prev) => [...prev, ...newFailedFiles]);
+                addToast(`${newFailedFiles.length} arquivo(s) falharam no envio`, 'error');
+            }
+            if (newUploadedFiles.length > uploadedFiles.length) {
+                addToast('Documentos enviados com sucesso!', 'success');
+            }
         } catch (err: any) {
             console.error(err);
             addToast('Erro ao enviar documentos. ' + mapGenericError(err.message), 'error');
@@ -130,6 +209,34 @@ export function useDiagnostico() {
 
     const removeFile = (index: number) => {
         setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    const retryFailedUpload = async (index: number) => {
+        const failedFile = failedFiles[index];
+        if (!failedFile) return;
+
+        setLoading(true);
+        try {
+            await uploadSingleFile(failedFile.file, failedFile.documentType);
+            setUploadedFiles((prev) => [...prev, failedFile.file]);
+            setFailedFiles((prev) => prev.filter((_, i) => i !== index));
+            addToast(`Arquivo ${failedFile.file.name} enviado com sucesso!`, 'success');
+        } catch (err: any) {
+            setFailedFiles((prev) =>
+                prev.map((item, i) =>
+                    i === index
+                        ? { ...item, error: mapGenericError(err.message) }
+                        : item
+                )
+            );
+            addToast(`Erro ao reenviar ${failedFile.file.name}. ${mapGenericError(err.message)}`, 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const removeFailedFile = (index: number) => {
+        setFailedFiles((prev) => prev.filter((_, i) => i !== index));
     };
 
     const canProceed = () => {
@@ -146,6 +253,11 @@ export function useDiagnostico() {
     };
 
     const handleNext = async () => {
+        if (!validateStep(currentStep)) {
+            addToast('Corrija os campos obrigatorios para continuar.', 'error');
+            return;
+        }
+
         setLoading(true);
         try {
             if (currentStep === 0) {
@@ -194,8 +306,7 @@ export function useDiagnostico() {
             await initiatePaymentAction(transactionId);
             // In dev mode, the action triggers diagnosis and redirects.
             // If no redirect occurred (unlikely), show success and redirect manually.
-            addToast('Diagnóstico iniciado com sucesso!', 'success');
-            window.location.href = '/meus-diagnosticos';
+            window.location.href = '/meus-diagnosticos?success=true';
         } catch (err: any) {
             // Next.js redirect throws an error, so we need to check for it
             if (err?.digest?.startsWith('NEXT_REDIRECT')) {
@@ -219,9 +330,14 @@ export function useDiagnostico() {
         initialLoading,
         formData,
         uploadedFiles,
+        failedFiles,
+        errors,
         updateField,
+        handleBlur,
         handleFilesUpload,
         removeFile,
+        retryFailedUpload,
+        removeFailedFile,
         canProceed,
         handleNext,
         handleBack,

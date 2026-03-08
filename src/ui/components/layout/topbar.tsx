@@ -98,7 +98,7 @@ export function Topbar() {
 
   return (
     <>
-      <header className="hidden md:flex fixed top-0 left-0 right-0 h-16 bg-white border-b border-border z-50 px-4 lg:px-8 items-center justify-between">
+      <header className="hidden md:flex fixed top-0 left-0 right-0 h-16 bg-white border-b border-border z-50 px-4 lg:px-8 items-center justify-between no-print">
         {/* Logo Section */}
         <Link href="/" className="flex items-center gap-4 group min-w-fit">
           {/* Container pequeno para o layout, mas logo grande transbordando */}

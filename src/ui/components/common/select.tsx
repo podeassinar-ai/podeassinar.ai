@@ -14,6 +14,7 @@ interface SelectProps {
   placeholder?: string;
   value?: string;
   onChange?: (e: { target: { value: string } }) => void;
+  onBlur?: () => void;
   className?: string;
   id?: string;
 }
@@ -25,6 +26,7 @@ export function Select({
   placeholder = 'Selecione',
   value,
   onChange,
+  onBlur,
   className = '',
   id,
 }: SelectProps) {
@@ -63,6 +65,7 @@ export function Select({
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
+          onBlur={onBlur}
           className={`
             input-field h-[48px] text-left flex items-center justify-between cursor-pointer w-full
             ${error ? 'border-error ring-1 ring-error/20' : ''}

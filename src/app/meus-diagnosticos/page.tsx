@@ -29,7 +29,13 @@ const statusStyles: Record<string, { label: string; variant: 'default' | 'succes
   COMPLETED: { label: 'Finalizado', variant: 'success' },
 };
 
-export default async function MeusDiagnosticosPage() {
+export default async function MeusDiagnosticosPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ success?: string }>;
+}) {
+  const params = await searchParams;
+  const showSuccess = params.success === 'true';
   const cookieStore = await cookies();
 
   const supabase = createServerClient(
@@ -91,6 +97,22 @@ export default async function MeusDiagnosticosPage() {
           </Link>
         }
       >
+        {showSuccess && (
+          <div className="bg-green-50 border border-green-200 rounded-xl p-6 mb-8 flex items-start gap-4 animate-fade-up">
+            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="font-bold text-green-800 text-lg">Diagnostico iniciado com sucesso!</h3>
+              <p className="text-green-700 mt-1">
+                Sua analise esta sendo processada pela nossa IA e estara disponivel em breve.
+              </p>
+            </div>
+          </div>
+        )}
+
         {error ? (
           <div className="bg-red-50 border border-red-200 rounded-lg p-8 text-center">
             <h3 className="text-lg font-bold text-red-800 mb-2">Erro ao carregar análises</h3>

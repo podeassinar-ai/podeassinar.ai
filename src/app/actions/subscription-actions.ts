@@ -11,6 +11,7 @@ import { ConsumeSubscriptionCreditUseCase } from '@application/use-cases/consume
 import { SupabaseAuditService } from '@infrastructure/services/supabase-audit-service';
 import { Plan } from '@domain/entities/plan';
 import { Subscription } from '@domain/entities/subscription';
+import { revalidatePath } from 'next/cache';
 
 export async function getAvailablePlansAction(): Promise<Plan[]> {
     const supabase = await createClient();
@@ -141,4 +142,36 @@ export async function initiateSubscriptionAction(planId: string) {
     });
 
     return { checkoutUrl: result.checkoutUrl };
+}
+
+export async function cancelSubscriptionAction(subscriptionId: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        throw new Error('Not authenticated');
+    }
+
+    const subscriptionRepo = new SupabaseSubscriptionRepository(supabase);
+    const subscription = await subscriptionRepo.findById(subscriptionId);
+
+    if (!subscription) {
+        throw new Error('Subscription not found');
+    }
+
+    if (subscription.userId !== user.id) {
+        throw new Error('Unauthorized');
+    }
+
+    if (subscription.status !== 'ACTIVE') {
+        throw new Error('Subscription is not active');
+    }
+
+    subscription.status = 'CANCELLED';
+    subscription.cancelledAt = new Date();
+
+    await subscriptionRepo.update(subscription);
+    revalidatePath('/minha-assinatura');
+
+    return { success: true };
 }

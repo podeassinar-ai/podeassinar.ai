@@ -1,12 +1,14 @@
 import { Card, Input, Select } from '@ui/components/common';
-import { FormData } from '../types';
+import { FormData, ValidationErrors } from '../types';
 
 interface StepPropertyInfoProps {
     formData: FormData;
     updateField: (field: keyof FormData, value: string) => void;
+    errors?: ValidationErrors;
+    onBlur?: (field: keyof FormData) => void;
 }
 
-export function StepPropertyInfo({ formData, updateField }: StepPropertyInfoProps) {
+export function StepPropertyInfo({ formData, updateField, errors, onBlur }: StepPropertyInfoProps) {
     return (
         <Card title="Dados do Imóvel" description="Identificação da propriedade objeto da análise">
             <div className="space-y-6">
@@ -15,6 +17,8 @@ export function StepPropertyInfo({ formData, updateField }: StepPropertyInfoProp
                     placeholder="Rua, número, complemento, bairro, cidade, estado"
                     value={formData.propertyAddress}
                     onChange={(e) => updateField('propertyAddress', e.target.value)}
+                    onBlur={() => onBlur?.('propertyAddress')}
+                    error={errors?.propertyAddress}
                 />
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -30,6 +34,8 @@ export function StepPropertyInfo({ formData, updateField }: StepPropertyInfoProp
                         placeholder="Selecione o tipo"
                         value={formData.propertyType}
                         onChange={(e) => updateField('propertyType', e.target.value)}
+                        onBlur={() => onBlur?.('propertyType')}
+                        error={errors?.propertyType}
                     />
 
                     <Input
