@@ -98,7 +98,8 @@ function LoginForm() {
         </Alert>
       )}
 
-      <div className="space-y-3 mb-6">
+      {/* TODO: Re-enable OAuth buttons when Google and Microsoft providers are configured in Supabase Auth */}
+      {/* <div className="space-y-3 mb-6">
         <button
           type="button"
           onClick={() => handleOAuth('google')}
@@ -152,7 +153,7 @@ function LoginForm() {
         <div className="relative flex justify-center text-xs uppercase">
           <span className="bg-white px-2 text-text-muted font-mono">ou continue com email</span>
         </div>
-      </div>
+      </div> */}
 
       <form onSubmit={handleAuth} className="space-y-4">
         <Input
