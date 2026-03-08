@@ -12,6 +12,18 @@ export interface AIAnalysisInput {
   }>;
   /** Optional: the reasoning tier to use. Defaults to DIAGNOSTIC. */
   tier?: AIReasoningTier;
+  /** Transaction context for the AI prompt */
+  transactionContext?: {
+    type: string;
+    propertyAddress?: string;
+    propertyType?: string;
+    propertyValue?: string;
+    hasMatricula?: string;
+    matriculaOption?: string;
+    additionalInfo?: string;
+    registryNumber?: string;
+    registryOffice?: string;
+  };
 }
 
 export interface AIAnalysisResult {

@@ -134,6 +134,17 @@ export class GenerateAIDiagnosisUseCase {
           questionnaire,
           documents,
           documentContents,
+          transactionContext: {
+            type: transaction.type,
+            propertyAddress: transaction.propertyAddress,
+            propertyType: transaction.propertyType,
+            propertyValue: transaction.propertyValue,
+            hasMatricula: transaction.hasMatricula,
+            matriculaOption: transaction.matriculaOption,
+            additionalInfo: transaction.additionalInfo,
+            registryNumber: transaction.registryNumber,
+            registryOffice: transaction.registryOffice,
+          },
         });
 
         const updatedDiagnosis = await this.diagnosisRepository.updateContent(diagnosis.id, {
