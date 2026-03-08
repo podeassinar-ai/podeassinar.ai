@@ -18,8 +18,8 @@ interface OpenAIConfig {
  * This is the ONLY place model names are hardcoded.
  */
 const TIER_MODEL_MAP: Record<AIReasoningTier, string> = {
-  DIAGNOSTIC: 'gpt-5-mini-2025-08-07', // Cost-effective, structured legal analysis
-  DEEP_LEGAL: 'gpt-5.2-2025-12-11',       // Full flagship model for complex cases
+  DIAGNOSTIC: 'gpt-4o-mini', // Cost-effective, structured legal analysis
+  DEEP_LEGAL: 'gpt-4o',     // Full flagship model for complex cases
 };
 
 export class OpenAIService implements IAIService {
@@ -56,23 +56,28 @@ export class OpenAIService implements IAIService {
   }
 
   private async callOpenAI(
-    messages: Array<{ role: string; content: string }>,
+    messages: Array<{ role: string; content: any }>,
     model: string,
-    attempt = 1
+    attempt = 1,
+    responseFormat?: { type: string }
   ): Promise<string> {
     try {
+      const body: Record<string, unknown> = {
+        model,
+        messages,
+        temperature: 0.3,
+      };
+      if (responseFormat) {
+        body.response_format = responseFormat;
+      }
+
       const response = await fetch(`${this.baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${this.apiKey}`,
         },
-        body: JSON.stringify({
-          model,
-          messages,
-          temperature: 0.3,
-          response_format: { type: 'json_object' },
-        }),
+        body: JSON.stringify(body),
         signal: AbortSignal.timeout(30000), // 30 second timeout
       });
 
@@ -90,7 +95,7 @@ export class OpenAIService implements IAIService {
       if (error.message?.startsWith('RETRYABLE:') && attempt < this.maxRetries) {
         const delay = this.retryDelayMs * Math.pow(2, attempt - 1);
         await this.sleep(delay);
-        return this.callOpenAI(messages, model, attempt + 1);
+        return this.callOpenAI(messages, model, attempt + 1, responseFormat);
       }
       throw error;
     }
@@ -137,7 +142,7 @@ Responda SEMPRE em JSON com a seguinte estrutura:
       { role: 'user', content: userContent },
     ];
 
-    const responseText = await this.callOpenAI(messages, model);
+    const responseText = await this.callOpenAI(messages, model, 1, { type: 'json_object' });
     const parsed = JSON.parse(responseText);
 
     return {
@@ -173,7 +178,24 @@ Responda SEMPRE em JSON com a seguinte estrutura:
   private formatInputForAnalysis(input: AIAnalysisInput): string {
     const parts: string[] = [];
 
-    parts.push('=== QUESTIONÁRIO ===');
+    if (input.transactionContext) {
+      parts.push('=== DADOS DA TRANSACAO ===');
+      parts.push(`Tipo: ${input.transactionContext.type}`);
+      parts.push(`Endereco: ${input.transactionContext.propertyAddress || 'Nao informado'}`);
+      parts.push(`Tipo do Imovel: ${input.transactionContext.propertyType || 'Nao informado'}`);
+      parts.push(`Valor Estimado: ${input.transactionContext.propertyValue || 'Nao informado'}`);
+      parts.push(`Possui Matricula: ${input.transactionContext.hasMatricula || 'Nao informado'}`);
+      if (input.transactionContext.matriculaOption)
+        parts.push(`Opcao Matricula: ${input.transactionContext.matriculaOption}`);
+      if (input.transactionContext.additionalInfo)
+        parts.push(`Info Adicional: ${input.transactionContext.additionalInfo}`);
+      if (input.transactionContext.registryNumber)
+        parts.push(`Numero Registro: ${input.transactionContext.registryNumber}`);
+      if (input.transactionContext.registryOffice)
+        parts.push(`Cartorio: ${input.transactionContext.registryOffice}`);
+    }
+
+    parts.push('\n=== QUESTIONÁRIO ===');
     if (input.questionnaire?.answers) {
       input.questionnaire.answers.forEach((a) => {
         parts.push(`Pergunta ${a.questionId}: ${JSON.stringify(a.value)}`);
@@ -219,13 +241,13 @@ Responda SEMPRE em JSON com a seguinte estrutura:
         },
         {
           role: 'user',
-          content: JSON.stringify({
-            type: 'image',
-            image_url: { url: `data:${mimeType};base64,${base64Content}` },
-          }),
+          content: [
+            { type: 'text', text: 'Extraia todas as informacoes relevantes deste documento imobiliario.' },
+            { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64Content}` } },
+          ],
         },
       ];
-      const response = await this.callOpenAI(messages as any, TIER_MODEL_MAP.DIAGNOSTIC);
+      const response = await this.callOpenAI(messages, TIER_MODEL_MAP.DIAGNOSTIC, 1, { type: 'json_object' });
       return JSON.parse(response);
     }
 
@@ -241,7 +263,7 @@ Responda SEMPRE em JSON com a seguinte estrutura:
         role: 'system',
         content: `Classifique a intenção do usuário em uma das categorias:
 - SALE: venda de imóvel
-- PURCHASE: compra de imóvel  
+- PURCHASE: compra de imóvel
 - RENTAL: aluguel
 - FINANCING: financiamento
 - REFINANCING: refinanciamento
