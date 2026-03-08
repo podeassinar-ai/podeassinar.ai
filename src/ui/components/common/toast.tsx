@@ -109,6 +109,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
       <p className="text-sm font-medium text-gray-800 dark:text-gray-100 flex-1">{toast.message}</p>
       <button
         onClick={onDismiss}
+        aria-label="Fechar notificação"
         className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

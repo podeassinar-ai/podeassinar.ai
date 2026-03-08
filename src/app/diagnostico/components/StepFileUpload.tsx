@@ -69,6 +69,7 @@ export function StepFileUpload({
                                     </div>
                                     <button
                                         onClick={() => removeFile(index)}
+                                        aria-label={`Remover arquivo ${file.name}`}
                                         className="p-1 text-gray-400 hover:text-error transition-colors"
                                     >
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -98,6 +99,7 @@ export function StepFileUpload({
                                         <button
                                             type="button"
                                             onClick={() => onRetry(index)}
+                                            aria-label={`Tentar novamente o arquivo ${failedFile.file.name}`}
                                             className="px-3 py-1.5 rounded-lg border border-red-200 text-sm text-red-700 hover:bg-red-100 transition-colors"
                                         >
                                             Tentar novamente
