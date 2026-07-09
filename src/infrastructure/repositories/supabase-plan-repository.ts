@@ -35,9 +35,12 @@ export class SupabasePlanRepository implements IPlanRepository {
             .eq('is_active', true)
             .order('price_cents', { ascending: true });
 
+        // Do NOT swallow real DB errors into an empty list — that makes a fetch
+        // failure indistinguishable from "genuinely no plans" and silently kills
+        // the subscription funnel. Let it throw so the error surfaces.
         if (error) {
             console.error('Error fetching active plans:', error);
-            return [];
+            throw new Error(`Failed to fetch active plans: ${error.message}`);
         }
 
         if (!data) return [];

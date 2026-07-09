@@ -63,6 +63,7 @@ export class GenerateAIDiagnosisUseCase {
 
   private isRetryableError(error: any): boolean {
     const retryableMessages = [
+      'retryable', // explicit marker from downstream services (e.g. OpenAI parse failures)
       'rate limit',
       'timeout',
       'ECONNRESET',
@@ -89,13 +90,21 @@ export class GenerateAIDiagnosisUseCase {
       throw new Error('Unauthorized access to transaction');
     }
 
-    if (transaction.status !== 'PROCESSING') {
-      throw new Error('Transaction is not ready for AI processing');
-    }
-
     const diagnosis = await this.diagnosisRepository.findByTransactionId(input.transactionId);
     if (!diagnosis) {
       throw new Error('Diagnosis not found');
+    }
+
+    // Idempotency for Inngest re-runs: if a previous run already produced the
+    // diagnosis (status moved off PROCESSING), don't throw or re-generate —
+    // return the existing result. Only a genuinely-not-yet-processed transaction
+    // (PROCESSING) proceeds to call the AI.
+    if (transaction.status !== 'PROCESSING') {
+      if (diagnosis.status === 'AI_GENERATED' || diagnosis.status === 'UNDER_REVIEW'
+        || diagnosis.status === 'APPROVED' || diagnosis.status === 'DELIVERED') {
+        return diagnosis;
+      }
+      throw new Error(`Transaction is not ready for AI processing (status=${transaction.status})`);
     }
 
     const questionnaire = await this.questionnaireRepository.findByTransactionId(input.transactionId);
@@ -147,7 +156,7 @@ export class GenerateAIDiagnosisUseCase {
           },
         });
 
-        const updatedDiagnosis = await this.diagnosisRepository.updateContent(diagnosis.id, {
+        await this.diagnosisRepository.updateContent(diagnosis.id, {
           propertyStatus: aiResult.propertyStatus,
           risks: aiResult.risks,
           pathways: aiResult.pathways,
@@ -155,7 +164,13 @@ export class GenerateAIDiagnosisUseCase {
           aiConfidence: aiResult.confidence,
         });
 
-        await this.diagnosisRepository.updateStatus(diagnosis.id, 'AI_GENERATED');
+        // updateStatus returns the row AFTER the status change, so the returned
+        // diagnosis reflects the final AI_GENERATED state (updateContent alone
+        // would return the pre-status-update row).
+        const updatedDiagnosis = await this.diagnosisRepository.updateStatus(
+          diagnosis.id,
+          'AI_GENERATED'
+        );
         await this.transactionRepository.updateStatus(input.transactionId, 'PENDING_REVIEW');
 
         await this.auditService.log({

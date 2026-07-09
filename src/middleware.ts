@@ -33,30 +33,29 @@ export async function middleware(request: NextRequest) {
       limitKey = `webhook:${clientIp}`;
     }
 
-    const result = await limiter.check(limitKey);
+    // The limiter fails open internally on backend errors (see UpstashRateLimiter),
+    // so this never throws and a Redis outage can't take down API routes.
+    const { allowed, resetAt } = await limiter.check(limitKey);
 
-    if (!result.allowed) {
+    if (!allowed) {
+      const retryAfter = Math.max(0, Math.ceil((resetAt.getTime() - Date.now()) / 1000));
       return new NextResponse(
         JSON.stringify({
           error: 'Too Many Requests',
           message: 'Rate limit exceeded. Please try again later.',
-          retryAfter: Math.ceil((result.resetAt.getTime() - Date.now()) / 1000),
+          retryAfter,
         }),
         {
           status: 429,
           headers: {
             'Content-Type': 'application/json',
             'X-RateLimit-Remaining': '0',
-            'X-RateLimit-Reset': result.resetAt.toISOString(),
-            'Retry-After': String(Math.ceil((result.resetAt.getTime() - Date.now()) / 1000)),
+            'X-RateLimit-Reset': resetAt.toISOString(),
+            'Retry-After': String(retryAfter),
           },
         }
       );
     }
-    // Continue to next steps (Auth) for API or return? 
-    // Usually API routes are also protected by Auth, so we continue.
-    // However, rate limiter sets headers on response. We need to carry them over.
-    // For simplicity, we'll let the response be created later and just check rate limit here.
   }
 
   // 2. Supabase Auth & Protected Routes
@@ -107,14 +106,6 @@ export async function middleware(request: NextRequest) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = '/';
     return NextResponse.redirect(redirectUrl);
-  }
-
-  // Add Rate Limit headers if it was an API request
-  if (pathname.startsWith('/api/')) {
-    // We'd need to re-run check or pass result? 
-    // Since we didn't return above, we can assume allowed.
-    // To keep it clean, we skip adding headers here for now as response object was recreated.
-    // Ideally we merge them.
   }
 
   return response;

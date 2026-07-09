@@ -7,6 +7,7 @@ import {
   SupabaseNotificationRepository,
 } from '@infrastructure/repositories';
 import { SupabaseDocumentRepository } from '@infrastructure/repositories/supabase-document-repository';
+import { SupabaseQuestionnaireRepository } from '@infrastructure/repositories/supabase-questionnaire-repository';
 import { OpenAIService } from '@infrastructure/services/openai-service';
 import { SupabaseAuditService } from '@infrastructure/services/supabase-audit-service';
 import { SupabaseStorageService } from '@infrastructure/services/supabase-storage-service';
@@ -15,31 +16,6 @@ import { NodeDocumentExtractor } from '@infrastructure/services/extraction';
 import { GenerateAIDiagnosisUseCase } from '@application/use-cases/generate-ai-diagnosis';
 import { ExtractDocumentTextUseCase } from '@application/use-cases/extract-document-text';
 import { NotificationDispatcher } from '@application/services/notification-dispatcher';
-
-class QuestionnaireRepository {
-  constructor(private supabase: ReturnType<typeof getSupabaseServiceClient>) { }
-
-  async findByTransactionId(transactionId: string) {
-    const { data, error } = await this.supabase
-      .from('questionnaires')
-      .select()
-      .eq('transaction_id', transactionId)
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') return null;
-      throw new Error(`Failed to find questionnaire: ${error.message}`);
-    }
-    return {
-      id: data.id,
-      transactionId: data.transaction_id,
-      answers: data.answers ?? [],
-      completedAt: data.completed_at ? new Date(data.completed_at) : undefined,
-      createdAt: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at),
-    };
-  }
-}
 
 export const extractDocumentText = inngest.createFunction(
   {
@@ -159,7 +135,7 @@ export const generateDiagnosis = inngest.createFunction(
       const supabase = getSupabaseServiceClient();
 
       const diagnosisRepo = new SupabaseDiagnosisRepository(supabase);
-      const questionnaireRepo = new QuestionnaireRepository(supabase);
+      const questionnaireRepo = new SupabaseQuestionnaireRepository(supabase);
       const documentRepo = new SupabaseDocumentRepository(supabase);
       const transactionRepo = new SupabaseTransactionRepository(supabase);
       const aiService = new OpenAIService();
@@ -168,7 +144,7 @@ export const generateDiagnosis = inngest.createFunction(
 
       const useCase = new GenerateAIDiagnosisUseCase(
         diagnosisRepo,
-        questionnaireRepo as any,
+        questionnaireRepo,
         documentRepo,
         transactionRepo,
         aiService,

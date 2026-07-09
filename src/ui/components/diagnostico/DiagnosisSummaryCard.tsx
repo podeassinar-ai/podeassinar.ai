@@ -1,4 +1,4 @@
-import { LegalDiagnosis, LegalPathway } from '@domain/entities/diagnosis';
+import { LegalDiagnosis } from '@domain/entities/diagnosis';
 import { Transaction } from '@domain/entities/transaction';
 import { statusConfig, ReportStatus, formatDate } from './report-config';
 
@@ -6,16 +6,6 @@ interface DiagnosisSummaryCardProps {
     diagnosis: LegalDiagnosis;
     transaction: Transaction;
     overallStatus: ReportStatus;
-}
-
-function calculateTotalCost(pathways: LegalPathway[]): { min: number; max: number } {
-    return pathways.reduce(
-        (acc, p) => ({
-            min: acc.min + (p.estimatedCost?.min ?? 0),
-            max: acc.max + (p.estimatedCost?.max ?? 0),
-        }),
-        { min: 0, max: 0 }
-    );
 }
 
 export function DiagnosisSummaryCard({ diagnosis, transaction, overallStatus }: DiagnosisSummaryCardProps) {

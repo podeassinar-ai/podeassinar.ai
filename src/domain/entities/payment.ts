@@ -9,7 +9,10 @@ export type PaymentType = 'DIAGNOSTIC' | 'CERTIFICATE_REQUEST' | 'LEGAL_SERVICE'
 
 export interface Payment {
   id: string;
-  transactionId: string;
+  // A payment references EITHER a transaction (diagnostic) OR a subscription
+  // (plan) — exactly one is set (enforced by a DB CHECK constraint).
+  transactionId?: string;
+  subscriptionId?: string;
   userId: string;
   type: PaymentType;
   status: PaymentStatus;
@@ -23,16 +26,24 @@ export interface Payment {
 
 export function createPayment(params: {
   id: string;
-  transactionId: string;
+  transactionId?: string;
+  subscriptionId?: string;
   userId: string;
   type: PaymentType;
   amount: number;
   currency?: string;
 }): Payment {
+  if (!params.transactionId && !params.subscriptionId) {
+    throw new Error('createPayment requires either transactionId or subscriptionId');
+  }
+  if (params.transactionId && params.subscriptionId) {
+    throw new Error('createPayment cannot reference both a transaction and a subscription');
+  }
   const now = new Date();
   return {
     id: params.id,
     transactionId: params.transactionId,
+    subscriptionId: params.subscriptionId,
     userId: params.userId,
     type: params.type,
     status: 'PENDING',

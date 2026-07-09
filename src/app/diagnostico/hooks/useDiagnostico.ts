@@ -307,9 +307,12 @@ export function useDiagnostico() {
         setLoading(true);
         try {
             await initiatePaymentAction(transactionId);
-            // In dev mode, the action triggers diagnosis and redirects.
-            // If no redirect occurred (unlikely), show success and redirect manually.
-            window.location.href = '/meus-diagnosticos?success=true';
+            // On success the action ALWAYS redirects (to the AbacatePay checkout,
+            // or straight to /meus-diagnosticos for the admin bypass), which
+            // throws NEXT_REDIRECT and is handled below. If we reach this line,
+            // NO redirect happened — that means checkout creation failed silently.
+            // Do NOT fake a success page; surface the problem instead.
+            throw new Error('Não foi possível iniciar o pagamento. Tente novamente.');
         } catch (err: any) {
             // Next.js redirect throws an error, so we need to check for it
             if (err?.digest?.startsWith('NEXT_REDIRECT')) {

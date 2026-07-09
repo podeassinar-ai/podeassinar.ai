@@ -101,6 +101,19 @@ export class SupabaseSubscriptionRepository implements ISubscriptionRepository {
         return subscription;
     }
 
+    async activateIfPending(subscriptionId: string): Promise<boolean> {
+        const { data, error } = await this.supabase
+            .from('user_subscriptions')
+            .update({ status: 'ACTIVE', updated_at: new Date().toISOString() })
+            .eq('id', subscriptionId)
+            .eq('status', 'PENDING_PAYMENT')
+            .select('id')
+            .maybeSingle();
+
+        if (error) throw new Error(error.message);
+        return data !== null; // true only if this call performed the activation
+    }
+
     async incrementDiagnosesUsed(subscriptionId: string): Promise<void> {
         const { error } = await this.supabase.rpc('increment_diagnoses_used', {
             subscription_id: subscriptionId,

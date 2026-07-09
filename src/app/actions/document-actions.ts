@@ -2,6 +2,7 @@
 
 import { createClient } from '@infrastructure/database/supabase-server';
 import { SupabaseDocumentRepository } from '@infrastructure/repositories';
+import { SupabaseAuditService } from '@infrastructure/services/supabase-audit-service';
 import { createDocument } from '@domain/entities/document';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -99,6 +100,15 @@ export async function getDocumentDownloadUrlAction(documentId: string) {
   if (urlError || !urlData) {
     throw new Error('Failed to generate download URL');
   }
+
+  // LGPD: log every access to a (sensitive) legal document.
+  await new SupabaseAuditService().log({
+    userId: user.id,
+    action: 'DOWNLOAD',
+    resource: 'DOCUMENT',
+    resourceId: documentId,
+    metadata: { fileName: doc.file_name, storageRef: doc.storage_ref },
+  });
 
   return {
     url: urlData.signedUrl,

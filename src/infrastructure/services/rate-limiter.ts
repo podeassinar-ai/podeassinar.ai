@@ -93,13 +93,25 @@ export class UpstashRateLimiter implements IRateLimiter {
   }
 
   async check(key: string): Promise<RateLimitResult> {
-    const { success, remaining, reset } = await this.ratelimit.limit(key);
+    try {
+      const { success, remaining, reset } = await this.ratelimit.limit(key);
 
-    return {
-      allowed: success,
-      remaining,
-      resetAt: new Date(reset),
-    };
+      return {
+        allowed: success,
+        remaining,
+        resetAt: new Date(reset),
+      };
+    } catch (error) {
+      // FAIL OPEN: if Redis is unreachable, do NOT 500 every request. Allow it
+      // and log — availability of the app matters more than perfect rate
+      // limiting during a Redis outage.
+      console.error('[RateLimiter] Upstash check failed, failing open:', error);
+      return {
+        allowed: true,
+        remaining: this.windowMs, // arbitrary non-zero
+        resetAt: new Date(Date.now() + this.windowMs),
+      };
+    }
   }
 }
 

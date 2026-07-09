@@ -45,7 +45,8 @@ export class SupabasePaymentRepository implements IPaymentRepository {
       .from('payments')
       .insert({
         id: payment.id,
-        transaction_id: payment.transactionId,
+        transaction_id: payment.transactionId ?? null,
+        subscription_id: payment.subscriptionId ?? null,
         user_id: payment.userId,
         type: payment.type,
         status: payment.status,
@@ -112,10 +113,36 @@ export class SupabasePaymentRepository implements IPaymentRepository {
     return this.mapToEntity(data);
   }
 
+  /**
+   * Atomically transitions a payment to COMPLETED only if it is not already
+   * completed. Returns the updated payment, or null if it was already COMPLETED
+   * (i.e. a concurrent webhook/sync already won the race). This is the single
+   * source of truth for idempotent payment confirmation.
+   */
+  async markPaidIfPending(id: string, externalId: string): Promise<Payment | null> {
+    const { data, error } = await this.supabase
+      .from('payments')
+      .update({
+        status: 'COMPLETED',
+        external_id: externalId,
+        paid_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .neq('status', 'COMPLETED')
+      .select()
+      .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    if (!data) return null; // already completed by a concurrent request
+    return this.mapToEntity(data);
+  }
+
   private mapToEntity(data: any): Payment {
     return {
       id: data.id,
-      transactionId: data.transaction_id,
+      transactionId: data.transaction_id ?? undefined,
+      subscriptionId: data.subscription_id ?? undefined,
       userId: data.user_id,
       type: data.type,
       status: data.status,

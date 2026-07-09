@@ -17,7 +17,8 @@ export type AuditResource =
 
 export interface AuditLogEntry {
   id: string;
-  userId: string;
+  // null denotes a system/automated actor (e.g. LGPD retention purge).
+  userId: string | null;
   action: AuditAction;
   resource: AuditResource;
   resourceId: string;

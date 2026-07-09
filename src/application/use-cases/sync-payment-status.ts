@@ -13,7 +13,10 @@ export interface SyncPaymentStatusOutput {
   previousStatus: PaymentStatus;
   currentStatus: PaymentStatus;
   becameCompleted: boolean;
-  transactionId: string;
+  // Undefined for subscription payments (which reference a subscription, not a
+  // transaction). Diagnostic payments always carry a transactionId.
+  transactionId?: string;
+  subscriptionId?: string;
   paymentId: string;
 }
 
@@ -47,29 +50,39 @@ export class SyncPaymentStatusUseCase {
         currentStatus: previousStatus,
         becameCompleted: false,
         transactionId: payment.transactionId,
+        subscriptionId: payment.subscriptionId,
         paymentId: payment.id,
       };
     }
 
     const checkoutDetails = await this.paymentGateway.getCheckout(payment.externalId);
-    
-    let newStatus: PaymentStatus = previousStatus;
-    
-    if (checkoutDetails.status === 'COMPLETED') {
-      await this.paymentRepository.markPaid(payment.id, payment.externalId);
-      newStatus = 'COMPLETED';
 
-      await this.auditService.log({
-        userId: input.userId,
-        action: 'UPDATE',
-        resource: 'PAYMENT',
-        resourceId: payment.id,
-        metadata: { 
-          status: 'COMPLETED', 
-          syncedFrom: previousStatus,
-          externalId: payment.externalId 
-        },
-      });
+    let newStatus: PaymentStatus = previousStatus;
+    // becameCompleted is true ONLY when THIS call performed the transition, so
+    // post-payment processing runs exactly once even if a webhook raced us.
+    let becameCompleted = false;
+
+    if (checkoutDetails.status === 'COMPLETED') {
+      const transitioned = await this.paymentRepository.markPaidIfPending(
+        payment.id,
+        payment.externalId
+      );
+      newStatus = 'COMPLETED';
+      becameCompleted = transitioned !== null;
+
+      if (becameCompleted) {
+        await this.auditService.log({
+          userId: input.userId,
+          action: 'UPDATE',
+          resource: 'PAYMENT',
+          resourceId: payment.id,
+          metadata: {
+            status: 'COMPLETED',
+            syncedFrom: previousStatus,
+            externalId: payment.externalId,
+          },
+        });
+      }
     } else if (checkoutDetails.status === 'EXPIRED' && previousStatus !== 'FAILED') {
       await this.paymentRepository.updateStatus(payment.id, 'FAILED', payment.externalId);
       newStatus = 'FAILED';
@@ -91,8 +104,9 @@ export class SyncPaymentStatusUseCase {
       synced: newStatus !== previousStatus,
       previousStatus,
       currentStatus: newStatus,
-      becameCompleted: newStatus === 'COMPLETED',
+      becameCompleted,
       transactionId: payment.transactionId,
+      subscriptionId: payment.subscriptionId,
       paymentId: payment.id,
     };
   }

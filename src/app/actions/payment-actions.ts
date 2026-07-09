@@ -9,7 +9,8 @@ import {
   SupabaseTransactionRepository,
   SupabasePaymentRepository,
   SupabaseUserRepository,
-  SupabaseDiagnosisRepository
+  SupabaseDiagnosisRepository,
+  SupabaseSubscriptionRepository
 } from '@infrastructure/repositories';
 import { createClient } from '@infrastructure/database/supabase-server';
 import { redirect } from 'next/navigation';
@@ -38,6 +39,27 @@ async function triggerPostPaymentProcessing(
   );
 
   return service.execute({ transactionId, userId });
+}
+
+/**
+ * Dispatches the side effect for a payment that JUST became completed:
+ * a subscription payment activates its subscription; a diagnostic payment
+ * starts the AI pipeline. Single home for this routing so the two sync actions
+ * (and the webhook) don't drift.
+ */
+async function runCompletedPaymentSideEffects(
+  result: { subscriptionId?: string; transactionId?: string },
+  userId: string,
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  transactionRepo: SupabaseTransactionRepository
+) {
+  if (result.subscriptionId) {
+    const subscriptionRepo = new SupabaseSubscriptionRepository(supabase);
+    await subscriptionRepo.activateIfPending(result.subscriptionId);
+  } else if (result.transactionId) {
+    const diagnosisRepo = new SupabaseDiagnosisRepository(supabase);
+    await triggerPostPaymentProcessing(result.transactionId, userId, transactionRepo, diagnosisRepo);
+  }
 }
 
 export async function initiatePaymentAction(transactionId: string) {
@@ -124,8 +146,7 @@ export async function syncPaymentStatusAction(paymentId: string) {
     });
 
     if (result.becameCompleted) {
-      const diagnosisRepo = new SupabaseDiagnosisRepository(supabase);
-      await triggerPostPaymentProcessing(result.transactionId, user.id, transactionRepo, diagnosisRepo);
+      await runCompletedPaymentSideEffects(result, user.id, supabase, transactionRepo);
     }
 
     revalidatePath('/meus-diagnosticos');
@@ -172,8 +193,7 @@ export async function syncPaymentByTransactionAction(transactionId: string) {
     });
 
     if (result.becameCompleted) {
-      const diagnosisRepo = new SupabaseDiagnosisRepository(supabase);
-      await triggerPostPaymentProcessing(result.transactionId, user.id, transactionRepo, diagnosisRepo);
+      await runCompletedPaymentSideEffects(result, user.id, supabase, transactionRepo);
     }
 
     revalidatePath('/meus-diagnosticos');

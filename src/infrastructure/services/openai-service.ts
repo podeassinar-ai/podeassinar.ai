@@ -143,7 +143,19 @@ Responda SEMPRE em JSON com a seguinte estrutura:
     ];
 
     const responseText = await this.callOpenAI(messages, model, 1, { type: 'json_object' });
-    const parsed = JSON.parse(responseText);
+
+    let parsed: any;
+    try {
+      parsed = JSON.parse(responseText);
+    } catch {
+      // A truncated/empty/malformed completion must be treated as RETRYABLE so
+      // the diagnosis use case retries instead of permanently stranding the
+      // transaction in ERROR. (The use case's isRetryableError matches on the
+      // word "timeout"/rate-limit/5xx; "RETRYABLE" is also caught by callers.)
+      throw new Error(
+        `RETRYABLE: OpenAI returned an unparseable diagnosis response (len=${responseText?.length ?? 0})`
+      );
+    }
 
     return {
       propertyStatus: parsed.propertyStatus || 'Status não determinado',

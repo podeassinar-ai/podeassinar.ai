@@ -25,7 +25,8 @@ describe('SyncPaymentStatusUseCase', () => {
     const payment = makePayment();
     const paymentRepository = {
       findById: vi.fn().mockResolvedValue(payment),
-      markPaid: vi.fn().mockResolvedValue({ ...payment, status: 'COMPLETED' }),
+      // Atomic transition succeeded -> returns the updated payment.
+      markPaidIfPending: vi.fn().mockResolvedValue({ ...payment, status: 'COMPLETED' }),
       updateStatus: vi.fn(),
     };
     const paymentGateway = {
@@ -54,7 +55,35 @@ describe('SyncPaymentStatusUseCase', () => {
       transactionId: payment.transactionId,
       paymentId: payment.id,
     });
-    expect(paymentRepository.markPaid).toHaveBeenCalledWith(payment.id, payment.externalId);
+    expect(paymentRepository.markPaidIfPending).toHaveBeenCalledWith(payment.id, payment.externalId);
+  });
+
+  it('does NOT report becameCompleted when a concurrent request already completed the payment (idempotency)', async () => {
+    const payment = makePayment();
+    const paymentRepository = {
+      findById: vi.fn().mockResolvedValue(payment),
+      // Race: another webhook/sync already completed it -> atomic update hits 0 rows -> null.
+      markPaidIfPending: vi.fn().mockResolvedValue(null),
+      updateStatus: vi.fn(),
+    };
+    const paymentGateway = {
+      getCheckout: vi.fn().mockResolvedValue({ status: 'COMPLETED' }),
+    };
+    const auditService = { log: vi.fn().mockResolvedValue(undefined) };
+
+    const useCase = new SyncPaymentStatusUseCase(
+      paymentRepository as any,
+      paymentGateway as any,
+      auditService as any
+    );
+
+    const result = await useCase.execute({ paymentId: payment.id, userId: payment.userId });
+
+    // The status IS completed, but THIS call did not perform the transition, so
+    // post-payment processing must not fire again.
+    expect(result.becameCompleted).toBe(false);
+    expect(result.currentStatus).toBe('COMPLETED');
+    expect(auditService.log).not.toHaveBeenCalled();
   });
 
   it('does not report becameCompleted when status is unchanged', async () => {

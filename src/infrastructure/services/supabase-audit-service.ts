@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 interface AuditLogRow {
   id: string;
-  user_id: string;
+  user_id: string | null;
   action: AuditAction;
   resource: AuditResource;
   resource_id: string;
@@ -43,7 +43,7 @@ export class SupabaseAuditService implements IAuditService {
       .from(this.tableName)
       .insert({
         id: uuidv4(),
-        user_id: entry.userId,
+        user_id: entry.userId ?? null,
         action: entry.action,
         resource: entry.resource,
         resource_id: entry.resourceId,

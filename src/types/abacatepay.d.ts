@@ -1,56 +1,34 @@
 declare module '@abacatepay/sdk' {
-  interface CustomerCreateParams {
-    email: string;
-    name: string;
-    cellphone: string;
-    taxId: string;
+  // NOTE: The real @abacatepay/sdk ships no type declarations. This ambient
+  // module matches the RUNTIME shape: `AbacatePay` is a FACTORY function that
+  // takes `{ secret }` and returns a client exposing resource namespaces. It is
+  // NOT a class — calling it with `new` throws at runtime.
+
+  interface AbacatePayFactoryOptions {
+    secret: string;
+    rest?: unknown;
   }
 
-  interface CustomerResponse {
-    data: {
-      id: string;
-      email: string;
-      name: string;
-    };
+  // The returned client exposes: rest, customers, checkouts, pix, coupons,
+  // store, mrr, payouts, subscriptions, products. We type it loosely because
+  // the gateway wraps it and maps the responses itself.
+  interface AbacatePayClient {
+    customers: Record<string, (...args: any[]) => Promise<any>>;
+    checkouts: Record<string, (...args: any[]) => Promise<any>>;
+    pix: Record<string, (...args: any[]) => Promise<any>>;
+    store: Record<string, (...args: any[]) => Promise<any>>;
+    mrr: Record<string, (...args: any[]) => Promise<any>>;
+    coupons: Record<string, (...args: any[]) => Promise<any>>;
+    payouts: Record<string, (...args: any[]) => Promise<any>>;
+    subscriptions: Record<string, (...args: any[]) => Promise<any>>;
+    products: Record<string, (...args: any[]) => Promise<any>>;
+    rest: unknown;
+    [key: string]: unknown;
   }
 
-  interface BillingProduct {
-    externalId: string;
-    name: string;
-    quantity: number;
-    price: number;
-  }
+  export function AbacatePay(options: AbacatePayFactoryOptions): AbacatePayClient;
 
-  interface BillingCreateParams {
-    frequency: 'ONE_TIME' | 'MULTIPLE';
-    methods: ('PIX' | 'CREDIT_CARD')[];
-    products: BillingProduct[];
-    metadata?: Record<string, string>;
-    customerId: string;
-    returnUrl: string;
-    completionUrl: string;
-  }
-
-  interface BillingResponse {
-    data: {
-      id: string;
-      url: string;
-      status: string;
-    };
-  }
-
-  interface Customers {
-    create(params: CustomerCreateParams): Promise<CustomerResponse>;
-  }
-
-  interface Billing {
-    create(params: BillingCreateParams): Promise<BillingResponse>;
-    refund(billingId: string): Promise<void>;
-  }
-
-  export class AbacatePay {
-    customers: Customers;
-    billing: Billing;
-    constructor(apiKey: string);
-  }
+  export class AbacatePayError extends Error {}
+  export class HTTPError extends Error {}
+  export const version: string;
 }

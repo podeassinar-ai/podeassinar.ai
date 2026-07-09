@@ -61,6 +61,12 @@ export interface PaymentWebhookEvent {
 
 export interface IPaymentGateway {
   createCheckout(params: CreateCheckoutParams): Promise<CheckoutResult>;
+  /**
+   * AbacatePay's primary webhook auth: the secret is delivered as the
+   * `?webhookSecret=` query-string param. Compared in constant time.
+   */
+  verifyWebhookSecret(providedSecret: string | null): boolean;
+  /** Optional HMAC-SHA256 header verification (X-Webhook-Signature). */
   verifyWebhookSignature(payload: string, signature: string): boolean;
   parseWebhookEvent(payload: string): PaymentWebhookEvent;
   refund(externalId: string): Promise<void>;

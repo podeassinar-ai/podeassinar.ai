@@ -33,7 +33,10 @@ export default async function MinhaAssinaturaPage({
         }).format(new Date(date));
     };
 
-    const percentageUsed = ((creditInfo.totalCredits - creditInfo.remainingCredits) / creditInfo.totalCredits) * 100;
+    // Guard against a zero-credit plan (division by zero -> NaN gauge).
+    const percentageUsed = creditInfo.totalCredits > 0
+        ? ((creditInfo.totalCredits - creditInfo.remainingCredits) / creditInfo.totalCredits) * 100
+        : 0;
     const percentageRemaining = 100 - percentageUsed;
 
     return (

@@ -14,3 +14,4 @@ export * from './toast';
 export * from './realtime-status';
 export * from './transaction-status-progress';
 export * from './page-loading-state';
+export * from './error-state';

@@ -85,10 +85,11 @@ export class InitiateSubscriptionUseCase {
 
         const savedSubscription = await this.subscriptionRepository.create(subscription);
 
-        // Create the payment record
+        // Create the payment record, referencing the subscription (not a fake
+        // transaction — payments.transaction_id has a real FK to transactions).
         const payment = createPayment({
             id: uuidv4(),
-            transactionId: savedSubscription.id, // Use subscription ID as the "transaction" reference
+            subscriptionId: savedSubscription.id,
             userId: input.userId,
             type: 'SUBSCRIPTION',
             amount: plan.priceCents,
